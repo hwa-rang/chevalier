@@ -222,7 +222,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: "L'herboriste a besoin d'aide",
     description:
-      'La vieille herboriste du village cherche quelqu'un pour l'aider à cueillir des herbes médicinales dans la forêt.',
+      "La vieille herboriste du village cherche quelqu'un pour l'aider à cueillir des herbes médicinales dans la forêt.",
     conditions: { minAge: 14 },
     outcomes: [
       {
@@ -411,7 +411,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Des ennuis fraternels',
     description:
-      'Votre frère ou sœur s'est mis dans une situation délicate — une dette de jeu ou une bagarre. Il vous demande de l'aide.',
+      "Votre frère ou sœur s'est mis dans une situation délicate — une dette de jeu ou une bagarre. Il vous demande de l'aide.",
     conditions: { requiresRelationType: 'sibling' },
     outcomes: [
       {
@@ -497,7 +497,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
         label: 'Dépenser pour se chauffer convenablement',
         goldDelta: -12,
         historyText:
-          'Vous dépensez pour du bois et des provisions supplémentaires. Vous traversez l'hiver sans trop souffrir.',
+          "Vous dépensez pour du bois et des provisions supplémentaires. Vous traversez l'hiver sans trop souffrir.",
       },
     ],
   },
@@ -630,7 +630,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Une fausse accusation',
     description:
-      'Un voisin vous accuse publiquement d'avoir volé ses poulets. C'est faux, mais plusieurs personnes l'entendent.',
+      "Un voisin vous accuse publiquement d'avoir volé ses poulets. C'est faux, mais plusieurs personnes l'entendent.",
     outcomes: [
       {
         label: 'Plaider votre innocence avec force',
@@ -857,12 +857,12 @@ export const MONTHLY_EVENTS: GameEvent[] = [
           prestige: { honor: 2 },
         },
         historyText:
-          'Vous prodiguez les premiers soins et l'emmenez au village. Il survit et vous remercie.',
+          "Vous prodiguez les premiers soins et l'emmenez au village. Il survit et vous remercie.",
       },
       {
         label: "Aller chercher de l'aide",
         statDelta: { prestige: { honor: 1 } },
-        historyText: 'Vous courez chercher de l'aide. L'homme est secouru à temps.',
+        historyText: "Vous courez chercher de l'aide. L'homme est secouru à temps.",
       },
       {
         label: 'Continuer votre chemin',
@@ -890,7 +890,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
         goldDelta: 20,
         statDelta: { prestige: { honor: -10, reputation: -3 } },
         historyText:
-          'Vous trahissez la vérité contre de l'or. Un homme innocent souffre par votre faute.',
+          "Vous trahissez la vérité contre de l'or. Un homme innocent souffre par votre faute.",
       },
     ],
   },
@@ -939,7 +939,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
         label: 'Prétendre être occupé',
         relationDelta: { relationType: 'mother', amount: -2 },
         historyText:
-          'Vous déclinez poliment. Elle dissimule sa déception, mais ne l'oublie pas.',
+          "Vous déclinez poliment. Elle dissimule sa déception, mais ne l'oublie pas.",
       },
     ],
   },
@@ -1033,7 +1033,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
     type: 'annual',
     title: 'Tournoi annoncé',
     description:
-      'Le seigneur organise un grand tournoi pour célébrer l'anniversaire de sa fille. Noblesse et chevaliers de toute la région seront présents.',
+      "Le seigneur organise un grand tournoi pour célébrer l'anniversaire de sa fille. Noblesse et chevaliers de toute la région seront présents.",
     conditions: { minAge: 16 },
     outcomes: [
       {
@@ -1067,7 +1067,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         label: "Soutenir l'héritier légitime",
         statDelta: { prestige: { honor: 2 } },
         historyText:
-          'Vous vous rangez du côté de l'héritier reconnu. La transition se passe relativement bien.',
+          "Vous vous rangez du côté de l'héritier reconnu. La transition se passe relativement bien.",
       },
       {
         label: 'Attendre et observer',
@@ -1096,7 +1096,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         goldDelta: -30,
         statDelta: { prestige: { glory: 2, honor: 2 } },
         historyText:
-          'Vous vendez une partie de vos biens et rejoignez l'armée des croisés. La gloire divine vous attend — si vous survivez.',
+          "Vous vendez une partie de vos biens et rejoignez l'armée des croisés. La gloire divine vous attend — si vous survivez.",
       },
       {
         label: "Faire un don à l'Église",
@@ -1138,7 +1138,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         goldDelta: 25,
         statDelta: { prestige: { honor: -8 } },
         historyText:
-          'Vous profitez de la crise pour engranger des profits. Les villageois ne l'oublieront pas.',
+          "Vous profitez de la crise pour engranger des profits. Les villageois ne l'oublieront pas.",
       },
     ],
   },
@@ -1212,7 +1212,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
     type: 'annual',
     title: 'Une visite de la noblesse',
     description:
-      'Un haut seigneur visite la région avec sa suite. Toute la population se mobilise pour l'accueillir dignement.',
+      "Un haut seigneur visite la région avec sa suite. Toute la population se mobilise pour l'accueillir dignement.",
     outcomes: [
       {
         label: 'Se présenter dignement',
@@ -1249,7 +1249,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
           combatSkills: { longSword: 1 },
         },
         historyText:
-          'Vous rejoignez l'armée royale. La campagne sera longue et éprouvante.',
+          "Vous rejoignez l'armée royale. La campagne sera longue et éprouvante.",
       },
       {
         label: 'Payer pour un remplaçant',
@@ -1511,7 +1511,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         label: 'Méditer sur les signes célestes',
         statDelta: { knowledgeSkills: { religion: 1, generalCulture: 1 } },
         historyText:
-          'Vous observez la comète chaque nuit et lisez les textes anciens qui l'évoquent.',
+          "Vous observez la comète chaque nuit et lisez les textes anciens qui l'évoquent.",
       },
       {
         label: 'Ignorer les superstitions',
@@ -1554,7 +1554,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
     type: 'annual',
     title: 'Un vieux fantôme réapparaît',
     description:
-      'Un individu que vous avez offensé autrefois — ou qui pense l'avoir été — est revenu dans la région. Il n'a pas oublié.',
+      "Un individu que vous avez offensé autrefois — ou qui pense l'avoir été — est revenu dans la région. Il n'a pas oublié.",
     conditions: { minAge: 18 },
     outcomes: [
       {

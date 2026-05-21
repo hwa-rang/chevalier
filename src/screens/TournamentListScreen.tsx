@@ -17,7 +17,7 @@ const TYPE_LABELS: Record<string, string> = {
   melee: 'Mêlée',
   joust: 'Joûte',
   swordDuel: "Duel à l'épée",
-  archery: 'Tir à l'arc',
+  archery: "Tir à l'arc",
   chess: 'Échecs',
   poetry: 'Poésie',
 };

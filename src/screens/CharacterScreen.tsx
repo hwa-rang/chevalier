@@ -27,7 +27,7 @@ function fameTier(glory: number): string {
   if (glory < 50) return 'Combattant local';
   if (glory < 70) return 'Champion régional';
   if (glory < 90) return 'Chevalier renommé';
-  return 'Légende de l'Europe';
+  return "Légende de l'Europe";
 }
 
 function fameTierColor(glory: number): string {
