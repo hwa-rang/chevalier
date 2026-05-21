@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-expo-app@latest . --template blank-typescript)",
+      "Bash(npx create-expo-app@latest . --template blank-typescript --yes)",
+      "Bash(npx create-expo-app@latest medieval-temp --template blank-typescript)",
+      "Bash(cp -r medieval-temp/assets .)",
+      "Bash(cp -r medieval-temp/node_modules .)",
+      "Bash(node -e \"require\\('uuid'\\)\")",
+      "Bash(npx tsc *)",
+      "Bash(npm install *)",
+      "Bash(npx expo *)",
+      "Bash(dir /s /b src)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Laura\\\\OneDrive\\\\CLAUDE\\\\APP-medieval\" -Recurse -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "Bash(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\Laura\\\\OneDrive\\\\CLAUDE\\\\APP-medieval\\\\src\\\\assets\\\\sprites\")",
+      "Bash(Out-Null)",
+      "Bash(Write-Output \"done\")",
+      "Bash(mkdir -p /mnt/c/Users/Laura/OneDrive/CLAUDE/APP-medieval/src/assets/sprites && echo \"done\")",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\Laura\\\\OneDrive\\\\CLAUDE\\\\APP-medieval\\\\src\\\\assets\\\\sprites\")",
+      "PowerShell(\"done\")",
+      "PowerShell(cd \"C:\\\\Users\\\\Laura\\\\OneDrive\\\\CLAUDE\\\\APP-medieval\"; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"CharacterSprite|sprites/\" } | Select-Object -First 40)",
+      "Bash(Select-Object -First 50)",
+      "Bash(Format-Table FullName)",
+      "Bash(node -e ' *)",
+      "Bash(Select-String -Pattern \"src/\\(components|screens/\\(VillageMap|EuropeMap\\)|data/\\(villagemap|europemap\\)\\)\")"
+    ]
+  }
+}

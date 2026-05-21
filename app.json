@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Chevalier",
+    "slug": "chevalier",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#3A1F0D"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "be.cible.chevalier"
+    },
+    "android": {
+      "package": "be.cible.chevalier",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#3A1F0D"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f83524ab-2a57-472f-8030-fb0d2bf93663"
+      }
+    }
+  }
+}
