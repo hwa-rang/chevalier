@@ -44,7 +44,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Une fièvre légère',
     description:
-      'Vous vous réveillez avec une fièvre persistante. Un repos forcé s'impose.',
+      "Vous vous réveillez avec une fièvre persistante. Un repos forcé s'impose.",
     outcomes: [
       {
         label: 'Se reposer',
@@ -97,7 +97,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
       {
         label: 'Prendre des herbes médicinales',
         goldDelta: -3,
-        historyText: 'Une décoction d'herbes soulage rapidement vos maux.',
+        historyText: "Une décoction d'herbes soulage rapidement vos maux.",
       },
     ],
   },
@@ -303,7 +303,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
       {
         label: 'Le chasser',
         statDelta: { prestige: { honor: -3 } },
-        historyText: 'Vous le renvoyez sans ménagement. Les voisins vous regardent d'un mauvais œil.',
+        historyText: "Vous le renvoyez sans ménagement. Les voisins vous regardent d'un mauvais œil.",
       },
     ],
   },
@@ -313,7 +313,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Un vieux soldat',
     description:
-      'Un ancien soldat s'est installé dans le village. Il propose de partager ses techniques de combat contre quelques pièces.',
+      "Un ancien soldat s'est installé dans le village. Il propose de partager ses techniques de combat contre quelques pièces.",
     conditions: { minAge: 15 },
     outcomes: [
       {
@@ -346,7 +346,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
         label: 'Acheter un remède',
         goldDelta: -4,
         statDelta: { physicalStats: { endurance: 2 } },
-        historyText: 'Vous achetez un tonique revigorant qui vous regonfle d'énergie.',
+        historyText: "Vous achetez un tonique revigorant qui vous regonfle d'énergie.",
       },
     ],
   },
@@ -418,12 +418,12 @@ export const MONTHLY_EVENTS: GameEvent[] = [
         label: 'Aider sans condition',
         goldDelta: -8,
         statDelta: { prestige: { honor: 1 } },
-        historyText: 'Vous payez ses dettes et le tirez d'affaire. Il vous jure de ne plus recommencer.',
+        historyText: "Vous payez ses dettes et le tirez d'affaire. Il vous jure de ne plus recommencer.",
       },
       {
         label: "Aider contre une promesse de changement",
         goldDelta: -5,
-        historyText: 'Il promet de changer. Vous n'êtes pas certain qu'il tiendra.',
+        historyText: "Il promet de changer. Vous n'êtes pas certain qu'il tiendra.",
       },
       {
         label: 'Refuser',
@@ -485,7 +485,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Un hiver rigoureux',
     description:
-      'Le froid est exceptionnellement mordant ce mois-ci. Les provisions s'amenuisent.',
+      "Le froid est exceptionnellement mordant ce mois-ci. Les provisions s'amenuisent.",
     outcomes: [
       {
         label: 'Se rationner et économiser',
@@ -507,7 +507,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Une tempête dévastatrice',
     description:
-      'Une violente tempête s'abat sur la région, endommageant toitures et récoltes.',
+      "Une violente tempête s'abat sur la région, endommageant toitures et récoltes.",
     outcomes: [
       {
         label: 'Aider à réparer les dégâts',
@@ -520,7 +520,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
       {
         label: 'Rester chez soi',
         goldDelta: -8,
-        historyText: 'Votre propre logis subit quelques dégâts qu'il faut réparer.',
+        historyText: "Votre propre logis subit quelques dégâts qu'il faut réparer.",
       },
     ],
   },
@@ -530,7 +530,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Une sécheresse tenace',
     description:
-      'Pas une goutte de pluie depuis des semaines. Les puits s'assèchent et les prix alimentaires grimpent.',
+      "Pas une goutte de pluie depuis des semaines. Les puits s'assèchent et les prix alimentaires grimpent.",
     outcomes: [
       {
         label: 'Constituer des réserves',
@@ -555,7 +555,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Un pickpocket habile',
     description:
-      'Dans la foule du marché, vous sentez une main s'insinuer dans votre bourse.',
+      "Dans la foule du marché, vous sentez une main s'insinuer dans votre bourse.",
     outcomes: [
       {
         label: 'Attraper le voleur',
@@ -603,7 +603,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Des marchandises suspectes',
     description:
-      'Un receleur vous propose discrètement d'acheter des marchandises à prix dérisoire. Elles semblent volées.',
+      "Un receleur vous propose discrètement d'acheter des marchandises à prix dérisoire. Elles semblent volées.",
     outcomes: [
       {
         label: 'Refuser et dénoncer',
@@ -685,7 +685,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Un cheval boiteux',
     description:
-      'Votre cheval boite et refuse d'avancer. Une pierre coincée dans le sabot ou un tendon froissé ?',
+      "Votre cheval boite et refuse d'avancer. Une pierre coincée dans le sabot ou un tendon froissé ?",
     conditions: { requiresItem: 'horse' },
     outcomes: [
       {
@@ -697,7 +697,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
       {
         label: 'Appeler le maréchal-ferrant',
         goldDelta: -8,
-        historyText: 'Le maréchal-ferrant s'en occupe rapidement. La bête repart au galop.',
+        historyText: "Le maréchal-ferrant s'en occupe rapidement. La bête repart au galop.",
       },
     ],
   },
@@ -761,13 +761,13 @@ export const MONTHLY_EVENTS: GameEvent[] = [
       {
         label: 'Ne rien faire, laisser courir',
         statDelta: { prestige: { reputation: 1 } },
-        historyText: 'Les rumeurs favorables font leur chemin d'elles-mêmes.',
+        historyText: "Les rumeurs favorables font leur chemin d'elles-mêmes.",
       },
       {
         label: 'Confirmer subtilement votre image',
         statDelta: { prestige: { reputation: 2, honor: -1 } },
         historyText:
-          'Vous faites tout pour entretenir votre image. Cela fonctionne, mais manque d'authenticité.',
+          "Vous faites tout pour entretenir votre image. Cela fonctionne, mais manque d'authenticité.",
       },
     ],
   },
@@ -777,7 +777,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Nouvelles du tournoi',
     description:
-      'On parle d'un chevalier qui a remporté un tournoi régional avec une technique étrange. Les détails circulent.',
+      "On parle d'un chevalier qui a remporté un tournoi régional avec une technique étrange. Les détails circulent.",
     outcomes: [
       {
         label: "S'intéresser aux détails",
@@ -827,7 +827,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
         label: 'Lui donner généreusement',
         goldDelta: -3,
         statDelta: { prestige: { honor: 2 } },
-        historyText: 'Vous lui donnez assez pour manger plusieurs jours. Son visage s'illumine.',
+        historyText: "Vous lui donnez assez pour manger plusieurs jours. Son visage s'illumine.",
       },
       {
         label: 'Lui donner un peu',
@@ -877,7 +877,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Un faux témoignage',
     description:
-      'Un puissant notaire vous demande de témoigner contre un homme innocent dont vous savez qu'il n'a pas commis le crime. En échange : une belle somme d'or.',
+      "Un puissant notaire vous demande de témoigner contre un homme innocent dont vous savez qu'il n'a pas commis le crime. En échange : une belle somme d'or.",
     outcomes: [
       {
         label: 'Refuser et dire la vérité',
@@ -902,7 +902,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Votre frère ou sœur est malade',
     description:
-      'L'un de vos frères ou sœurs est pris d'une forte fièvre. Sa famille proche s'inquiète. Il a besoin d'aide.',
+      "L'un de vos frères ou sœurs est pris d'une forte fièvre. Sa famille proche s'inquiète. Il a besoin d'aide.",
     conditions: { requiresRelationType: 'sibling' },
     outcomes: [
       {
@@ -915,7 +915,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
         label: 'Ignorer et vaquer à vos affaires',
         statDelta: { prestige: { honor: -1 } },
         historyText:
-          'Vous ne prenez pas la peine d'aider. Votre absence ne passera pas inaperçue.',
+          "Vous ne prenez pas la peine d'aider. Votre absence ne passera pas inaperçue.",
       },
     ],
   },
@@ -925,7 +925,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Votre mère souhaite vous parler',
     description:
-      'Votre mère vous fait signe d'approcher. Elle a des choses à vous raconter — souvenirs, conseils, récits de famille.',
+      "Votre mère vous fait signe d'approcher. Elle a des choses à vous raconter — souvenirs, conseils, récits de famille.",
     conditions: { requiresRelationType: 'mother' },
     outcomes: [
       {
@@ -967,11 +967,11 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     type: 'monthly',
     title: 'Votre frère ou sœur a des ennuis',
     description:
-      'L'un de vos frères ou sœurs s'est mis dans une situation difficile : dettes, querelle ou mauvaise fréquentation. Il a besoin de votre aide.',
+      "L'un de vos frères ou sœurs s'est mis dans une situation difficile : dettes, querelle ou mauvaise fréquentation. Il a besoin de votre aide.",
     conditions: { requiresRelationType: 'sibling' },
     outcomes: [
       {
-        label: 'L'aider à s'en sortir',
+        label: "L'aider à s'en sortir",
         goldDelta: -5,
         relationDelta: { relationType: 'sibling', amount: 5 },
         historyText:
@@ -981,7 +981,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
         label: 'Le laisser se débrouiller',
         statDelta: { prestige: { honor: -2 } },
         historyText:
-          'Vous refusez d'intervenir. Il s'en sortira peut-être seul, mais votre réputation familiale en souffre.',
+          "Vous refusez d'intervenir. Il s'en sortira peut-être seul, mais votre réputation familiale en souffre.",
       },
     ],
   },
@@ -1041,7 +1041,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         goldDelta: -5,
         statDelta: { prestige: { glory: 1 } },
         historyText:
-          'Vous payez les droits d'inscription et commencez à vous préparer.',
+          "Vous payez les droits d'inscription et commencez à vous préparer.",
       },
       {
         label: 'Assister comme spectateur',
@@ -1061,7 +1061,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
     type: 'annual',
     title: 'Le seigneur est mort',
     description:
-      'Le seigneur local est décédé subitement. Une crise de succession s'amorce. L'avenir est incertain.',
+      "Le seigneur local est décédé subitement. Une crise de succession s'amorce. L'avenir est incertain.",
     outcomes: [
       {
         label: "Soutenir l'héritier légitime",
@@ -1108,7 +1108,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
       {
         label: 'Rester chez vous',
         historyText:
-          'Vous restez. Certains vous regardent avec désapprobation, d'autres avec soulagement.',
+          "Vous restez. Certains vous regardent avec désapprobation, d'autres avec soulagement.",
       },
     ],
   },
@@ -1124,7 +1124,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         label: 'Constituer des réserves maintenant',
         goldDelta: -20,
         historyText:
-          'Vous achetez des vivres à prix fort avant que la disette ne s'aggrave.',
+          "Vous achetez des vivres à prix fort avant que la disette ne s'aggrave.",
       },
       {
         label: 'Partager avec les plus démunis',
@@ -1169,7 +1169,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
       {
         label: 'Payer rançon',
         goldDelta: -25,
-        historyText: 'Vous payez pour qu'ils passent leur chemin. Humiliant mais efficace.',
+        historyText: "Vous payez pour qu'ils passent leur chemin. Humiliant mais efficace.",
       },
     ],
   },
@@ -1225,7 +1225,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         goldDelta: -20,
         statDelta: { prestige: { reputation: 2, glory: 1 } },
         historyText:
-          'Votre cadeau impressionne le seigneur. Il s'en souviendra.',
+          "Votre cadeau impressionne le seigneur. Il s'en souviendra.",
       },
       {
         label: "Éviter l'événement",
@@ -1354,14 +1354,14 @@ export const ANNUAL_EVENTS: GameEvent[] = [
     type: 'annual',
     title: 'La grande foire',
     description:
-      'Une foire extraordinaire s'installe pour une semaine. Acrobates, marchands exotiques, bêtes sauvages et jongleurs envahissent la ville.',
+      "Une foire extraordinaire s'installe pour une semaine. Acrobates, marchands exotiques, bêtes sauvages et jongleurs envahissent la ville.",
     outcomes: [
       {
         label: 'Profiter des spectacles',
         goldDelta: -5,
         statDelta: { knowledgeSkills: { generalCulture: 2 } },
         historyText:
-          'Une semaine d'émerveillement. Vous en revenez avec une vision plus large du monde.',
+          "Une semaine d'émerveillement. Vous en revenez avec une vision plus large du monde.",
       },
       {
         label: 'Chercher des opportunités commerciales',
@@ -1409,9 +1409,9 @@ export const ANNUAL_EVENTS: GameEvent[] = [
   {
     id: 'annual_merchant_guild',
     type: 'annual',
-    title: 'La guilde des marchands s'établit',
+    title: "La guilde des marchands s'établit",
     description:
-      'Une guilde de marchands s'installe dans la région. Ils cherchent des membres fiables et des associés potentiels.',
+      "Une guilde de marchands s'installe dans la région. Ils cherchent des membres fiables et des associés potentiels.",
     conditions: {
       minAge: 16,
       minSkill: { skill: 'knowledgeSkills.eloquence', value: 20 },
@@ -1425,7 +1425,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
           prestige: { reputation: 2 },
         },
         historyText:
-          'Vous payez la cotisation et rejoignez la guilde. De nouveaux horizons commerciaux s'ouvrent.',
+          "Vous payez la cotisation et rejoignez la guilde. De nouveaux horizons commerciaux s'ouvrent.",
       },
       {
         label: 'Proposer un partenariat limité',
@@ -1458,7 +1458,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         goldDelta: -10,
         statDelta: { knowledgeSkills: { eloquence: 1 } },
         historyText:
-          'Grâce à votre persuasion, vous convainquez le collecteur d'un arrangement. Un succès diplomatique.',
+          "Grâce à votre persuasion, vous convainquez le collecteur d'un arrangement. Un succès diplomatique.",
       },
       {
         label: 'Dissimuler des revenus',
@@ -1475,7 +1475,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
     type: 'annual',
     title: 'Un miracle au sanctuaire local',
     description:
-      'On rapporte qu'une statue de la Vierge a pleuré du sang. Des pèlerins affluent de toute la région. L'atmosphère est chargée d'émotion.',
+      "On rapporte qu'une statue de la Vierge a pleuré du sang. Des pèlerins affluent de toute la région. L'atmosphère est chargée d'émotion.",
     outcomes: [
       {
         label: 'Se recueillir au sanctuaire',
@@ -1527,7 +1527,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
     type: 'annual',
     title: 'Un édit royal',
     description:
-      'Un édit royal change les règles concernant le commerce et les taxes dans la région. Certains y gagnent, d'autres y perdent.',
+      "Un édit royal change les règles concernant le commerce et les taxes dans la région. Certains y gagnent, d'autres y perdent.",
     outcomes: [
       {
         label: 'S'adapter rapidement',
