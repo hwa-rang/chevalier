@@ -883,7 +883,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
         label: 'Refuser et dire la vérité',
         statDelta: { prestige: { honor: 2 } },
         historyText:
-          'Vous dites la vérité malgré les risques. L'innocent est libéré, et votre conscience est nette.',
+          "Vous dites la vérité malgré les risques. L'innocent est libéré, et votre conscience est nette.",
       },
       {
         label: 'Accepter le faux témoignage',
@@ -929,7 +929,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
     conditions: { requiresRelationType: 'mother' },
     outcomes: [
       {
-        label: 'L'écouter attentivement',
+        label: "L'écouter attentivement",
         statDelta: { knowledgeSkills: { generalCulture: 1 } },
         relationDelta: { relationType: 'mother', amount: 3 },
         historyText:
@@ -1037,7 +1037,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
     conditions: { minAge: 16 },
     outcomes: [
       {
-        label: 'S'inscrire au tournoi',
+        label: "S'inscrire au tournoi",
         goldDelta: -5,
         statDelta: { prestige: { glory: 1 } },
         historyText:
@@ -1256,7 +1256,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         goldDelta: -25,
         statDelta: { prestige: { honor: -2 } },
         historyText:
-          'Vous payez un homme pour vous remplacer. C'est légal, mais peu valorisant.',
+          "Vous payez un homme pour vous remplacer. C'est légal, mais peu valorisant.",
       },
       {
         label: 'Se soustraire à la levée',
@@ -1272,7 +1272,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
     type: 'annual',
     title: 'La grande famine',
     description:
-      'La famine frappe durement après des mois de pénurie. Les gens meurent dans les rues. L'air sent la mort.',
+      "La famine frappe durement après des mois de pénurie. Les gens meurent dans les rues. L'air sent la mort.",
     outcomes: [
       {
         label: 'Ouvrir sa table aux affamés',
@@ -1340,7 +1340,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         goldDelta: -15,
         statDelta: { prestige: { honor: 1, reputation: 2 } },
         historyText:
-          'L'évêque mentionne votre nom en chaire. Votre réputation de chrétien pieux grandit.',
+          "L'évêque mentionne votre nom en chaire. Votre réputation de chrétien pieux grandit.",
       },
       {
         label: "Ignorer l'événement",
@@ -1530,7 +1530,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
       "Un édit royal change les règles concernant le commerce et les taxes dans la région. Certains y gagnent, d'autres y perdent.",
     outcomes: [
       {
-        label: 'S'adapter rapidement',
+        label: "S'adapter rapidement",
         goldDelta: 5,
         statDelta: { knowledgeSkills: { eloquence: 1 } },
         historyText: 'Vous ajustez vos activités. Le changement vous est favorable.',
@@ -1567,7 +1567,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         label: 'Chercher une réconciliation',
         statDelta: { prestige: { reputation: 1, honor: 1 } },
         historyText:
-          'Vous faites le premier pas. L'homme est surpris mais finit par tendre la main.',
+          "Vous faites le premier pas. L'homme est surpris mais finit par tendre la main.",
       },
       {
         label: "L'éviter",
