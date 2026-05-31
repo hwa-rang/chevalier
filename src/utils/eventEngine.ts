@@ -9,7 +9,7 @@ function getSkillValue(player: Player, skillPath: string): number {
   const skill = skillPath.slice(dotIndex + 1);
   const group = player[category];
   if (typeof group === 'object' && group !== null && skill in group) {
-    return (group as Record<string, number>)[skill] ?? 0;
+    return (group as unknown as Record<string, number>)[skill] ?? 0;
   }
   return 0;
 }

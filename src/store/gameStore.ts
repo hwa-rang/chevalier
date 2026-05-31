@@ -14,8 +14,16 @@ import type {
 } from '../types/game';
 import { getBackgroundBonuses } from '../utils/backgrounds';
 import { generateFamily } from '../utils/familyGenerator';
+import { makeNpc, makeRandomFriend } from '../utils/relationGenerator';
+import { formatStatDelta, type ChangeLine } from '../utils/statLabels';
 import type { GameEvent } from '../data/events';
 import { rollMonthlyEvent, rollAnnualEvent } from '../utils/eventEngine';
+
+// Action economy: one skill action + four social actions per month.
+export const MAX_PRINCIPAL_ACTIONS = 1;
+export const MAX_SECONDARY_ACTIONS = 4;
+/** Visiting the same place this many times in a row triggers a streak effect. */
+const STREAK_THRESHOLD = 3;
 
 // ---------------------------------------------------------------------------
 // Opposed stats helpers
@@ -115,6 +123,7 @@ function makeDefaultPlayer(
     age: startingAge,
     skinTone,
     background,
+    religion: 'christian',
     gold: 10,
     physicalStats: {
       strength: 0,
@@ -160,6 +169,10 @@ function makeDefaultPlayer(
     currentYear: GAME_START_YEAR,
     currentMonth: 1,
     skillActivityUsedThisMonth: false,
+    principalActionsUsed: 0,
+    secondaryActionsUsed: 0,
+    visitStreakLocation: null,
+    visitStreakCount: 0,
     griefModifiers: [],
     activePlague: false,
   };
@@ -272,6 +285,34 @@ export interface TournamentResultParams {
   historyText: string;
 }
 
+/** A village activity to perform, resolved from the screen's activity table. */
+export interface ActivityRequest {
+  kind: 'principal' | 'secondary';
+  /** Location id, used for the consecutive-visit streak (tavern/church). */
+  location?: string;
+  statDelta?: StatDelta;
+  christianRelationDelta?: number;
+  paganRelationDelta?: number;
+  /** Find-or-create a recurring NPC (blacksmith/merchant/artisan) and nudge their score. */
+  ensureNpc?: { role: string; profession: string };
+  npcScoreDelta?: number;
+  /** Chance to befriend a stranger (tavern socialising). */
+  meetRandomFriend?: boolean;
+  /** Chance to forage a small random item (forest/river strolls). */
+  findItem?: {
+    chance: number;
+    pool: Array<{ name: string; category: Item['category']; subtype: string; weight?: number }>;
+  };
+}
+
+export interface ActivityResult {
+  ok: boolean;
+  /** Reason shown when the action is blocked (no slots left). */
+  reason?: string;
+  lines?: ChangeLine[];
+  note?: string;
+}
+
 export interface GameState {
   player: Player | null;
   pendingEvent: GameEvent | null;
@@ -279,8 +320,16 @@ export interface GameState {
   // Actions
   initNewGame: (name: string, background: Background, skinTone: SkinTone) => void;
   advanceMonth: () => void;
-  resolveEvent: (outcomeIndex: number) => void;
+  /** Performs a village activity, honouring the monthly action limits. */
+  performActivity: (req: ActivityRequest) => ActivityResult;
+  /** Resolves the pending event and returns a summary of what changed. */
+  resolveEvent: (outcomeIndex: number) => ActivityResult;
   applyStatDelta: (delta: StatDelta) => void;
+  /**
+   * Adjusts relation scores by faith. The priest and any 'christian' NPC get
+   * `christianDelta`; any 'pagan' NPC gets `paganDelta`. Used by the temple/church.
+   */
+  applyReligionRelationDelta: (christianDelta: number, paganDelta: number) => void;
   addToHistory: (text: string) => void;
   addItem: (item: Item) => void;
   addRelation: (relation: Relation) => void;
@@ -325,6 +374,8 @@ export const useGameStore = create<GameState>()(
           currentYear: year,
           age,
           skillActivityUsedThisMonth: false,
+          principalActionsUsed: 0,
+          secondaryActionsUsed: 0,
         };
 
         const absMonth = year * 12 + month;
@@ -412,24 +463,29 @@ export const useGameStore = create<GameState>()(
 
       resolveEvent: (outcomeIndex) => {
         const { player, pendingEvent } = get();
-        if (!player || !pendingEvent) return;
+        if (!player || !pendingEvent) return { ok: false };
 
         const outcome = pendingEvent.outcomes[outcomeIndex];
-        if (!outcome) return;
+        if (!outcome) return { ok: false };
 
         let next = { ...player };
+        const lines: ChangeLine[] = [];
+        const noteParts: string[] = [outcome.historyText];
 
         if (outcome.statDelta) {
           next = applyDeltaToPlayer(next, outcome.statDelta);
+          lines.push(...formatStatDelta(outcome.statDelta));
         }
 
         if (outcome.goldDelta) {
           next = { ...next, gold: Math.max(0, next.gold + outcome.goldDelta) };
+          lines.push({ label: 'Or', value: outcome.goldDelta });
         }
 
         if (outcome.addItem) {
           const item: Item = { ...outcome.addItem, id: uuidv4() };
           next = { ...next, inventory: [...next.inventory, item] };
+          noteParts.push(`Obtenu : ${item.name}.`);
         }
 
         if (outcome.removeItem) {
@@ -437,10 +493,12 @@ export const useGameStore = create<GameState>()(
             (i) => i.subtype === outcome.removeItem,
           );
           if (idx >= 0) {
+            const removed = next.inventory[idx];
             next = {
               ...next,
               inventory: next.inventory.filter((_, i) => i !== idx),
             };
+            noteParts.push(`Perdu : ${removed.name}.`);
           }
         }
 
@@ -454,6 +512,7 @@ export const useGameStore = create<GameState>()(
                 : r,
             ),
           };
+          lines.push({ label: `Relation (${relationType})`, value: amount });
         }
 
         if (outcome.setActivePlague) {
@@ -469,12 +528,169 @@ export const useGameStore = create<GameState>()(
         };
 
         set({ player: next, pendingEvent: null });
+        return { ok: true, lines, note: noteParts.join(' ') };
       },
 
       applyStatDelta: (delta) => {
         const { player } = get();
         if (!player) return;
         set({ player: applyDeltaToPlayer(player, delta) });
+      },
+
+      applyReligionRelationDelta: (christianDelta, paganDelta) => {
+        const { player } = get();
+        if (!player) return;
+        const relations = player.relations.map((r) => {
+          const faith = r.religion ?? 'christian';
+          // The priest always counts as Christian, regardless of stored faith.
+          const isChristian = faith === 'christian' || r.type === 'priest';
+          const d = isChristian ? christianDelta : faith === 'pagan' ? paganDelta : 0;
+          if (d === 0) return r;
+          return {
+            ...r,
+            score: Math.max(-100, Math.min(100, r.score + d)),
+          };
+        });
+        set({ player: { ...player, relations } });
+      },
+
+      performActivity: (req) => {
+        const { player } = get();
+        if (!player) return { ok: false, reason: 'Aucun personnage.' };
+
+        const principalUsed = player.principalActionsUsed ?? 0;
+        const secondaryUsed = player.secondaryActionsUsed ?? 0;
+
+        if (req.kind === 'principal' && principalUsed >= MAX_PRINCIPAL_ACTIONS) {
+          return { ok: false, reason: "Vous avez déjà accompli votre action principale ce mois-ci." };
+        }
+        if (req.kind === 'secondary' && secondaryUsed >= MAX_SECONDARY_ACTIONS) {
+          return { ok: false, reason: "Vous avez épuisé vos actions secondaires ce mois-ci." };
+        }
+
+        let next: Player = { ...player };
+        const lines: ChangeLine[] = [];
+        const noteParts: string[] = [];
+
+        // 1. Direct stat changes
+        if (req.statDelta) {
+          next = applyDeltaToPlayer(next, req.statDelta);
+          lines.push(...formatStatDelta(req.statDelta));
+        }
+
+        // 2. Faith-based relation shift (priest + Christians vs pagans)
+        const cd = req.christianRelationDelta ?? 0;
+        const pd = req.paganRelationDelta ?? 0;
+        if (cd !== 0 || pd !== 0) {
+          next = {
+            ...next,
+            relations: next.relations.map((r) => {
+              const faith = r.religion ?? 'christian';
+              const isChristian = faith === 'christian' || r.type === 'priest';
+              const d = isChristian ? cd : faith === 'pagan' ? pd : 0;
+              return d === 0 ? r : { ...r, score: clamp(r.score + d) };
+            }),
+          };
+          if (cd !== 0) lines.push({ label: 'Relations chrétiennes', value: cd });
+          if (pd !== 0) lines.push({ label: 'Relations païennes', value: pd });
+        }
+
+        // 3. Recurring NPC (find-or-create, then adjust their score)
+        if (req.ensureNpc) {
+          const { role, profession } = req.ensureNpc;
+          let idx = next.relations.findIndex((r) => r.npcRole === role);
+          if (idx < 0) {
+            const npc = makeNpc(role, profession);
+            next = { ...next, relations: [...next.relations, npc] };
+            idx = next.relations.length - 1;
+            noteParts.push(`Vous avez fait la connaissance de ${npc.name}.`);
+          }
+          const delta = req.npcScoreDelta ?? 0;
+          if (delta !== 0) {
+            const target = next.relations[idx];
+            const updated = { ...target, score: clamp(target.score + delta) };
+            next = {
+              ...next,
+              relations: next.relations.map((r, i) => (i === idx ? updated : r)),
+            };
+            lines.push({ label: `Relation : ${updated.name}`, value: delta });
+          }
+        }
+
+        // 4. Forage a small random item (weighted pick)
+        let foundSomething = false;
+        if (req.findItem && req.findItem.pool.length > 0 && Math.random() < req.findItem.chance) {
+          const pool = req.findItem.pool;
+          const totalWeight = pool.reduce((sum, it) => sum + (it.weight ?? 1), 0);
+          let roll = Math.random() * totalWeight;
+          let picked = pool[0];
+          for (const it of pool) {
+            roll -= it.weight ?? 1;
+            if (roll < 0) {
+              picked = it;
+              break;
+            }
+          }
+          const item: Item = {
+            id: uuidv4(),
+            name: picked.name,
+            category: picked.category,
+            subtype: picked.subtype,
+          };
+          next = { ...next, inventory: [...next.inventory, item] };
+          noteParts.push(`Vous avez trouvé : ${item.name}.`);
+          foundSomething = true;
+        }
+
+        // 5. Random new friend (socialising / strolling)
+        if (req.meetRandomFriend) {
+          if (Math.random() < 0.4) {
+            const friend = makeRandomFriend(next.age);
+            next = { ...next, relations: [...next.relations, friend] };
+            noteParts.push(`Vous avez fait la connaissance de ${friend.name}.`);
+            foundSomething = true;
+          }
+        }
+
+        // Stroll with nothing to show
+        if ((req.meetRandomFriend || req.findItem) && !foundSomething) {
+          noteParts.push("Rien d'intéressant cette fois-ci.");
+        }
+
+        // 6. Consecutive-visit streak (tavern penalty / church bonus)
+        if (req.location) {
+          const sameLoc = (next.visitStreakLocation ?? null) === req.location;
+          const count = (sameLoc ? next.visitStreakCount ?? 0 : 0) + 1;
+          next = { ...next, visitStreakLocation: req.location, visitStreakCount: count };
+
+          if (count >= STREAK_THRESHOLD && count % STREAK_THRESHOLD === 0) {
+            if (req.location === 'tavern') {
+              next = applyDeltaToPlayer(next, { prestige: { honor: -3, reputation: -2 } });
+              lines.push({ label: 'Honneur', value: -3 });
+              lines.push({ label: 'Réputation', value: -2 });
+              noteParts.push('On jase sur vos excès à la taverne.');
+            } else if (req.location === 'church') {
+              next = applyDeltaToPlayer(next, { prestige: { honor: 2, reputation: 1 } });
+              lines.push({ label: 'Honneur', value: 2 });
+              lines.push({ label: 'Réputation', value: 1 });
+              noteParts.push('Votre piété assidue est remarquée.');
+            }
+          }
+        }
+
+        // 6. Consume the action slot
+        if (req.kind === 'principal') {
+          next = {
+            ...next,
+            principalActionsUsed: principalUsed + 1,
+            skillActivityUsedThisMonth: true,
+          };
+        } else {
+          next = { ...next, secondaryActionsUsed: secondaryUsed + 1 };
+        }
+
+        set({ player: next });
+        return { ok: true, lines, note: noteParts.length ? noteParts.join(' ') : undefined };
       },
 
       addToHistory: (text) => {

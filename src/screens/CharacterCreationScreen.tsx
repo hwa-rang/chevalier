@@ -5,11 +5,10 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  StyleSheet,
-  SafeAreaView,
-  KeyboardAvoidingView,
+  StyleSheet,  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { CharacterCreationScreenProps } from '../navigation/types';
 import { useGameStore } from '../store/gameStore';
 import type { Background, SkinTone } from '../types/game';

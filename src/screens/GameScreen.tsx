@@ -1,17 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
+  StyleSheet,  TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
-import { useGameStore } from '../store/gameStore';
+import {
+  useGameStore,
+  MAX_PRINCIPAL_ACTIONS,
+  MAX_SECONDARY_ACTIONS,
+} from '../store/gameStore';
 import EventModal from '../components/EventModal';
+import ActivityResultModal from '../components/ActivityResultModal';
+import type { ChangeLine } from '../utils/statLabels';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Game'>;
 
@@ -25,6 +30,8 @@ export default function GameScreen({ navigation }: Props) {
   const advanceMonth = useGameStore((s) => s.advanceMonth);
   const pendingEvent = useGameStore((s) => s.pendingEvent);
   const resolveEvent = useGameStore((s) => s.resolveEvent);
+
+  const [eventResult, setEventResult] = useState<{ lines: ChangeLine[]; note?: string } | null>(null);
 
   if (!player) return null;
 
@@ -108,11 +115,32 @@ export default function GameScreen({ navigation }: Props) {
 
         <View style={styles.spacer} />
 
+        <View style={styles.actionSummary}>
+          <Text style={styles.actionSummaryText}>
+            ⚔ Principale {player.principalActionsUsed ?? 0}/{MAX_PRINCIPAL_ACTIONS}
+            {'    '}✦ Secondaires {player.secondaryActionsUsed ?? 0}/{MAX_SECONDARY_ACTIONS}
+          </Text>
+        </View>
+
         <TouchableOpacity style={styles.advanceButton} onPress={advanceMonth}>
           <Text style={styles.advanceText}>Passer au mois suivant →</Text>
         </TouchableOpacity>
       </ScrollView>
-      <EventModal event={pendingEvent} onChoose={resolveEvent} />
+      <EventModal
+        event={pendingEvent}
+        onChoose={(index) => {
+          const res = resolveEvent(index);
+          if (res.ok) setEventResult({ lines: res.lines ?? [], note: res.note });
+        }}
+      />
+
+      <ActivityResultModal
+        visible={eventResult !== null}
+        title="Conséquence de votre choix"
+        lines={eventResult?.lines ?? []}
+        note={eventResult?.note}
+        onClose={() => setEventResult(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -184,6 +212,16 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: 24,
+  },
+  actionSummary: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  actionSummaryText: {
+    fontFamily: 'serif',
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '700',
   },
   tournamentButton: {
     borderColor: Colors.accent,

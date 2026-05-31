@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
+  StyleSheet,  TouchableOpacity,
   ScrollView,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
@@ -216,10 +215,38 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
 
   // --- FRIEND / STRANGER INTERACTIONS ---
   const doBoire = () => {
+    if (player.gold < 1) {
+      showFeedback("Pas assez d'or (1 g requis).");
+      return;
+    }
     updateScore(3);
-    applyStatDelta({ knowledgeSkills: { eloquence: 0.5 } });
-    addToHistory(`Vous avez bu un verre avec ${relation.name}. La conversation a coulé.`);
-    showFeedback(`Relation +3 · Éloquence +0.5`);
+    applyStatDelta({ gold: -1 });
+    addToHistory(`Vous avez offert un verre à ${relation.name}. La conversation a coulé.`);
+    showFeedback(`-1 g · Relation +3`);
+  };
+
+  // --- HOSTILE INTERACTIONS (available for any relation) ---
+  const doMoquer = () => {
+    const newScore = Math.max(-100, relation.score - 5);
+    addRelation({ ...relation, score: newScore });
+    addToHistory(`Vous vous êtes moqué de ${relation.name}.`);
+    showFeedback(`Relation -5`);
+  };
+
+  const doInsulter = () => {
+    const newScore = Math.max(-100, relation.score - 10);
+    const becomesEnemy = newScore <= -50 && relation.type !== 'enemy' && !isFamily;
+    addRelation({
+      ...relation,
+      score: newScore,
+      ...(becomesEnemy ? { type: 'enemy' as RelationType } : {}),
+    });
+    addToHistory(`Vous avez insulté ${relation.name}.`);
+    showFeedback(
+      becomesEnemy
+        ? `Relation -10 · ${relation.name} vous considère désormais comme un ennemi !`
+        : `Relation -10`,
+    );
   };
 
   const doEchecs = () => {
@@ -371,7 +398,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
         {isFriendOrStranger && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Interaction</Text>
-            <ActionButton label="Boire un verre" description="+3 relation · +éloquence" onPress={doBoire} />
+            <ActionButton label="Boire un verre" description="-1 g · +3 relation" onPress={doBoire} />
             <ActionButton
               label="Jouer aux échecs"
               description="+2 relation · +stratégie"
@@ -446,6 +473,13 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
         {!romance.allowed && !isFamily && !isLover && (
           <Text style={styles.romanceBlocked}>{romance.reason}</Text>
         )}
+
+        {/* HOSTILE ACTIONS — always available */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Hostilité</Text>
+          <ActionButton label="Se moquer" description="-5 relation" onPress={doMoquer} variant="danger" />
+          <ActionButton label="Insulter" description="-10 relation (peut créer un ennemi)" onPress={doInsulter} variant="danger" />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

@@ -2,11 +2,10 @@ import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
+  StyleSheet,  TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { TournamentScreenProps } from '../navigation/types';
 import { Colors } from '../theme/colors';
 import { useGameStore } from '../store/gameStore';
@@ -108,7 +107,7 @@ function getPlayerSkill(player: Player, skillPath: string): number {
   const [group, key] = skillPath.split('.');
   const skillGroup = player[group as keyof Player];
   if (typeof skillGroup === 'object' && skillGroup !== null && key in (skillGroup as object)) {
-    return ((skillGroup as Record<string, unknown>)[key] as number) ?? 0;
+    return ((skillGroup as unknown as Record<string, unknown>)[key] as number) ?? 0;
   }
   return 0;
 }

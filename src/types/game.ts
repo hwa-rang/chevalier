@@ -1,5 +1,7 @@
 export type SkinTone = 'tone1' | 'tone2' | 'tone3' | 'tone4' | 'tone5';
 
+export type Religion = 'christian' | 'pagan';
+
 export type Background =
   | 'noble'
   | 'merchant'
@@ -89,6 +91,10 @@ export interface Relation {
   type: RelationType;
   /** -100 to 100 */
   score: number;
+  /** Faith of this NPC. Defaults to 'christian' when absent (legacy saves). */
+  religion?: Religion;
+  /** Stable role for recurring village NPCs (e.g. 'blacksmith', 'merchant', 'artisan'). */
+  npcRole?: string;
   /** Skill taught by this person when type === 'master' (e.g. 'combatSkills.longSword') */
   skill?: string;
   /** True if a flirt result of mutual interest is pending courtship */
@@ -122,6 +128,8 @@ export interface Player {
   age: number;
   skinTone: SkinTone;
   background: Background;
+  /** The player is Christian by default. */
+  religion: Religion;
   gold: number;
   physicalStats: PhysicalStats;
   combatSkills: CombatSkills;
@@ -137,6 +145,12 @@ export interface Player {
   currentYear: number;
   currentMonth: number; // 1–12
   skillActivityUsedThisMonth: boolean;
+  /** Action economy — reset to 0 each month. Max 1 principal, 4 secondary. */
+  principalActionsUsed: number;
+  secondaryActionsUsed: number;
+  /** Consecutive-visit streak used by tavern (penalty) and church (bonus). */
+  visitStreakLocation: string | null;
+  visitStreakCount: number;
   griefModifiers: GriefModifier[];
   /** Set to true by the plague annual event; raises death chance for relations that year */
   activePlague: boolean;

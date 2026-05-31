@@ -23,6 +23,9 @@ function pickRandom<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+export const pickMaleName = (): string => pickRandom(MALE_NAMES);
+export const pickFemaleName = (): string => pickRandom(FEMALE_NAMES);
+
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -55,6 +58,7 @@ export function generateFamily(playerAge: number): Relation[] {
     age: fatherCurrentAge,
     type: 'father',
     score: randomInt(20, 60),
+    religion: 'christian',
   });
 
   // Mother: 30–50 at time of birth
@@ -67,6 +71,7 @@ export function generateFamily(playerAge: number): Relation[] {
     age: motherCurrentAge,
     type: 'mother',
     score: randomInt(30, 70),
+    religion: 'christian',
   });
 
   // Parish priest: 40–70 current age
@@ -76,6 +81,7 @@ export function generateFamily(playerAge: number): Relation[] {
     age: randomInt(40, 70),
     type: 'priest',
     score: randomInt(10, 50),
+    religion: 'christian',
   });
 
   // Siblings: 0–8, weighted toward 0–2
@@ -92,6 +98,7 @@ export function generateFamily(playerAge: number): Relation[] {
       age: siblingAge,
       type: 'sibling',
       score: randomInt(0, 60),
+      religion: 'christian',
     });
   }
 

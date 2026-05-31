@@ -97,7 +97,7 @@ export const VILLAGE_POIS: PointOfInterest[] = [
   { id: 'forest',     label: 'Forêt',    x:  5, y:  5, icon: '🌲', color: '#2D6A4F' },
 
   // Top-right quadrant
-  { id: 'temple',     label: 'Temple',   x: 32, y:  8, icon: '🕍', color: '#C0B090' },
+  { id: 'temple',     label: 'Temple',   x: 32, y:  8, icon: '🗿', color: '#7E6A52' },
   { id: 'river',      label: 'Rivière',  x: 40, y:  8, icon: '🐟', color: '#4A90D9' },
 
   // Bottom-left fields
