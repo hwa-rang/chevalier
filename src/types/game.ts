@@ -1,5 +1,8 @@
 export type SkinTone = 'tone1' | 'tone2' | 'tone3' | 'tone4' | 'tone5';
 
+/** Hair colour for the character sprite. */
+export type Hair = 'hair1' | 'hair2';
+
 export type Religion = 'christian' | 'pagan';
 
 export type Background =
@@ -127,6 +130,8 @@ export interface Player {
   name: string;
   age: number;
   skinTone: SkinTone;
+  /** Hair colour for the sprite (brun / blond). */
+  hair: Hair;
   background: Background;
   /** The player is Christian by default. */
   religion: Religion;
@@ -151,6 +156,8 @@ export interface Player {
   /** Consecutive-visit streak used by tavern (penalty) and church (bonus). */
   visitStreakLocation: string | null;
   visitStreakCount: number;
+  /** Cumulative pagan-temple visits — too many gets you barred from the church. */
+  templeVisits: number;
   griefModifiers: GriefModifier[];
   /** Set to true by the plague annual event; raises death chance for relations that year */
   activePlague: boolean;

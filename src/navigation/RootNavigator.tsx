@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './types';
 import MainMenuScreen from '../screens/MainMenuScreen';
 import CharacterCreationScreen from '../screens/CharacterCreationScreen';
+import IntroScreen from '../screens/IntroScreen';
 import GameScreen from '../screens/GameScreen';
 import ShopScreen from '../screens/ShopScreen';
 import InventoryScreen from '../screens/InventoryScreen';
@@ -23,6 +24,7 @@ export default function RootNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
         <Stack.Screen name="MainMenu" component={MainMenuScreen} />
         <Stack.Screen name="CharacterCreation" component={CharacterCreationScreen} />
+        <Stack.Screen name="Intro" component={IntroScreen} />
         <Stack.Screen name="Game" component={GameScreen} />
         <Stack.Screen name="Shop" component={ShopScreen} />
         <Stack.Screen name="Inventory" component={InventoryScreen} />

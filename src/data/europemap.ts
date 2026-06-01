@@ -190,6 +190,36 @@ const POSITIONS: Record<string, { col: number; row: number }> = {
   gdansk_melee:    { col: 56, row: 16 },
 };
 
+// ─── Bandit camps ─────────────────────────────────────────────────────────────
+
+export interface BanditCamp {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  /** Martial power needed to clear it (player power compared against this). */
+  difficulty: number;
+  rewardGold: number;
+  rewardGlory: number;
+}
+
+export const BANDIT_CAMPS: BanditCamp[] = [
+  { id: 'camp_ardennes', label: 'Camp des Ardennes',     x: 33, y: 19, difficulty: 35, rewardGold: 25, rewardGlory: 6 },
+  { id: 'camp_pyrenees', label: 'Repaire des Pyrénées',  x: 23, y: 30, difficulty: 55, rewardGold: 45, rewardGlory: 10 },
+  { id: 'camp_alps',     label: "Nid d'aigle des Alpes", x: 41, y: 31, difficulty: 75, rewardGold: 70, rewardGlory: 16 },
+];
+
+export function buildBanditPois(): PointOfInterest[] {
+  return BANDIT_CAMPS.map((c) => ({
+    id: c.id,
+    label: c.label,
+    x: c.x,
+    y: c.y,
+    icon: '💀',
+    color: '#7A2020',
+  }));
+}
+
 // ─── Build POI list from TOURNAMENTS ─────────────────────────────────────────
 
 export function buildEuropePois(playerGlory: number): PointOfInterest[] {

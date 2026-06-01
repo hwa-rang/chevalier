@@ -27,6 +27,8 @@ export function filterEligibleEvents(
     if (c.minGlory !== undefined && player.prestige.glory < c.minGlory) return false;
     if (c.minReputation !== undefined && player.prestige.reputation < c.minReputation)
       return false;
+    if (c.maxReputation !== undefined && player.prestige.reputation > c.maxReputation)
+      return false;
     if (c.minHonor !== undefined && player.prestige.honor < c.minHonor) return false;
     if (c.maxHonor !== undefined && player.prestige.honor > c.maxHonor) return false;
     if (
@@ -53,9 +55,16 @@ function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-/** 15% chance to return an eligible monthly event, null otherwise. */
+/**
+ * Returns an eligible monthly event or null. Base chance 15%, rising as
+ * reputation drops below 0 (up to +35% at reputation −100): the more notorious
+ * you are, the more often trouble — especially law/faith events — finds you.
+ */
 export function rollMonthlyEvent(player: Player): GameEvent | null {
-  if (Math.random() > 0.15) return null;
+  const rep = player.prestige.reputation;
+  const lowRepBonus = rep < 0 ? Math.min(0.35, (-rep / 100) * 0.35) : 0;
+  const chance = 0.15 + lowRepBonus;
+  if (Math.random() > chance) return null;
   const eligible = filterEligibleEvents(player, MONTHLY_EVENTS);
   if (eligible.length === 0) return null;
   return pickRandom(eligible);

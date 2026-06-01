@@ -10,7 +10,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
-import { useGameStore } from '../store/gameStore';
+import {
+  useGameStore,
+  MAX_PRINCIPAL_ACTIONS,
+  MAX_SECONDARY_ACTIONS,
+} from '../store/gameStore';
 import { canRomance } from '../utils/romanceRules';
 import type { Relation, RelationType, StatDelta } from '../types/game';
 
@@ -120,10 +124,24 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
   const addRelation = useGameStore((s) => s.addRelation);
   const applyStatDelta = useGameStore((s) => s.applyStatDelta);
   const addToHistory = useGameStore((s) => s.addToHistory);
+  const consumeActionSlot = useGameStore((s) => s.consumeActionSlot);
 
   const [feedback, setFeedback] = useState<string | null>(null);
 
   if (!player) return null;
+
+  const principalLeft = (player.principalActionsUsed ?? 0) < MAX_PRINCIPAL_ACTIONS;
+  const secondaryLeft = (player.secondaryActionsUsed ?? 0) < MAX_SECONDARY_ACTIONS;
+  const SKILL_SLOT_MSG = 'Action principale déjà utilisée ce mois-ci';
+  const SOCIAL_SLOT_MSG = 'Actions secondaires épuisées ce mois-ci';
+
+  /** Consumes a monthly action slot; shows feedback and returns false if exhausted. */
+  const tryUseSlot = (kind: 'principal' | 'secondary'): boolean => {
+    if (consumeActionSlot(kind)) return true;
+    setFeedback(kind === 'principal' ? SKILL_SLOT_MSG : SOCIAL_SLOT_MSG);
+    setTimeout(() => setFeedback(null), 3000);
+    return false;
+  };
 
   const relation = player.relations.find((r) => r.personId === personId);
   if (!relation) {
@@ -173,6 +191,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
 
   // --- FAMILY INTERACTIONS ---
   const doRepas = () => {
+    if (!tryUseSlot('principal')) return;
     updateScore(3);
     applyStatDelta({ knowledgeSkills: { generalCulture: 0.5 }, prestige: { honor: 0.2 } });
     addToHistory(`Repas partagé avec ${relation.name}. Un moment de lien familial.`);
@@ -180,6 +199,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
   };
 
   const doConseil = () => {
+    if (!tryUseSlot('principal')) return;
     updateScore(2);
     const useStrategy = Math.random() < 0.5;
     if (useStrategy) {
@@ -194,6 +214,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
   };
 
   const doDispute = () => {
+    if (!tryUseSlot('secondary')) return;
     const win = Math.random() < 0.5;
     if (win) {
       updateScore(5);
@@ -208,6 +229,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
 
   const doSecret = () => {
     if (relation.score < 50) return;
+    if (!tryUseSlot('secondary')) return;
     updateScore(5);
     addToHistory(`Vous avez confié un secret à ${relation.name}. Le lien de confiance s'est renforcé.`);
     showFeedback(`Relation +5`);
@@ -219,6 +241,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
       showFeedback("Pas assez d'or (1 g requis).");
       return;
     }
+    if (!tryUseSlot('secondary')) return;
     updateScore(3);
     applyStatDelta({ gold: -1 });
     addToHistory(`Vous avez offert un verre à ${relation.name}. La conversation a coulé.`);
@@ -227,6 +250,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
 
   // --- HOSTILE INTERACTIONS (available for any relation) ---
   const doMoquer = () => {
+    if (!tryUseSlot('secondary')) return;
     const newScore = Math.max(-100, relation.score - 5);
     addRelation({ ...relation, score: newScore });
     addToHistory(`Vous vous êtes moqué de ${relation.name}.`);
@@ -234,6 +258,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
   };
 
   const doInsulter = () => {
+    if (!tryUseSlot('secondary')) return;
     const newScore = Math.max(-100, relation.score - 10);
     const becomesEnemy = newScore <= -50 && relation.type !== 'enemy' && !isFamily;
     addRelation({
@@ -251,6 +276,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
 
   const doEchecs = () => {
     if (!hasChessSet) return;
+    if (!tryUseSlot('principal')) return;
     updateScore(2);
     applyStatDelta({ knowledgeSkills: { strategy: 1 } });
     addToHistory(`Partie d'échecs avec ${relation.name}. Votre esprit s'affûte.`);
@@ -259,6 +285,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
 
   const doEntrainer = () => {
     if (!hasWeapon) return;
+    if (!tryUseSlot('principal')) return;
     updateScore(3);
     const skill = pickRandomCombatSkill();
     applyStatDelta({ combatSkills: { [skill]: 1 } as StatDelta['combatSkills'] });
@@ -281,6 +308,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
       showFeedback(`Pas assez d'or (10 g requis).`);
       return;
     }
+    if (!tryUseSlot('principal')) return;
     const skill = relation.skill ?? 'combatSkills.longSword';
     updateScore(2);
     applyStatDelta({ gold: -10, ...buildSkillDelta(skill, 4) });
@@ -289,6 +317,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
   };
 
   const doDiscuterTechnique = () => {
+    if (!tryUseSlot('principal')) return;
     const skill = relation.skill ?? 'combatSkills.longSword';
     updateScore(1);
     applyStatDelta(buildSkillDelta(skill, 1));
@@ -298,6 +327,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
 
   // --- LOVER INTERACTIONS ---
   const doPasserTemps = () => {
+    if (!tryUseSlot('secondary')) return;
     updateScore(4);
     addToHistory(`Vous passez du temps précieux avec ${relation.name}.`);
     showFeedback(`Relation +4`);
@@ -311,6 +341,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
 
   // --- ROMANCE INTERACTIONS ---
   const doFlirter = () => {
+    if (!tryUseSlot('secondary')) return;
     const roll = Math.random();
     updateScore(2);
     if (roll < 0.33) {
@@ -370,6 +401,14 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
           )}
         </View>
 
+        {/* Monthly action budget */}
+        <View style={styles.slotInfo}>
+          <Text style={styles.slotInfoText}>
+            ⚔ Principale {player.principalActionsUsed ?? 0}/{MAX_PRINCIPAL_ACTIONS}
+            {'    '}✦ Secondaires {player.secondaryActionsUsed ?? 0}/{MAX_SECONDARY_ACTIONS}
+          </Text>
+        </View>
+
         {/* Feedback banner */}
         {feedback && (
           <View style={styles.feedbackBox}>
@@ -381,14 +420,26 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
         {isFamily && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Famille</Text>
-            <ActionButton label="Partager un repas" description="+3 relation · +culture · +honneur" onPress={doRepas} />
-            <ActionButton label="Demander conseil" description="+2 relation · +culture ou stratégie" onPress={doConseil} />
-            <ActionButton label="Se disputer" description="Risqué : relation -8 ou +5" onPress={doDispute} variant="danger" />
+            <ActionButton
+              label="Partager un repas" description="+3 relation · +culture · +honneur"
+              disabled={!principalLeft} disabledReason={SKILL_SLOT_MSG}
+              onPress={doRepas}
+            />
+            <ActionButton
+              label="Demander conseil" description="+2 relation · +culture ou stratégie"
+              disabled={!principalLeft} disabledReason={SKILL_SLOT_MSG}
+              onPress={doConseil}
+            />
+            <ActionButton
+              label="Se disputer" description="Risqué : relation -8 ou +5"
+              disabled={!secondaryLeft} disabledReason={SOCIAL_SLOT_MSG}
+              onPress={doDispute} variant="danger"
+            />
             <ActionButton
               label="Partager un secret"
               description="+5 relation"
-              disabled={relation.score < 50}
-              disabledReason="Score requis ≥ 50"
+              disabled={relation.score < 50 || !secondaryLeft}
+              disabledReason={relation.score < 50 ? 'Score requis ≥ 50' : SOCIAL_SLOT_MSG}
               onPress={doSecret}
             />
           </View>
@@ -398,19 +449,23 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
         {isFriendOrStranger && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Interaction</Text>
-            <ActionButton label="Boire un verre" description="-1 g · +3 relation" onPress={doBoire} />
+            <ActionButton
+              label="Boire un verre" description="-1 g · +3 relation"
+              disabled={!secondaryLeft} disabledReason={SOCIAL_SLOT_MSG}
+              onPress={doBoire}
+            />
             <ActionButton
               label="Jouer aux échecs"
               description="+2 relation · +stratégie"
-              disabled={!hasChessSet}
-              disabledReason="Requiert un jeu d'échecs"
+              disabled={!hasChessSet || !principalLeft}
+              disabledReason={!hasChessSet ? "Requiert un jeu d'échecs" : SKILL_SLOT_MSG}
               onPress={doEchecs}
             />
             <ActionButton
               label="S'entraîner ensemble"
               description="+3 relation · +compétence combat"
-              disabled={!hasWeapon}
-              disabledReason="Requiert une arme"
+              disabled={!hasWeapon || !principalLeft}
+              disabledReason={!hasWeapon ? 'Requiert une arme' : SKILL_SLOT_MSG}
               onPress={doEntrainer}
             />
             <ActionButton
@@ -430,11 +485,15 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
             <ActionButton
               label="Séance d'entraînement"
               description="-10 g · +4 compétence · +2 relation"
-              disabled={player.gold < 10}
-              disabledReason="Pas assez d'or (10 g)"
+              disabled={player.gold < 10 || !principalLeft}
+              disabledReason={player.gold < 10 ? 'Pas assez d\'or (10 g)' : SKILL_SLOT_MSG}
               onPress={doSeanceEntrainement}
             />
-            <ActionButton label="Discuter technique" description="+1 compétence · +1 relation" onPress={doDiscuterTechnique} />
+            <ActionButton
+              label="Discuter technique" description="+1 compétence · +1 relation"
+              disabled={!principalLeft} disabledReason={SKILL_SLOT_MSG}
+              onPress={doDiscuterTechnique}
+            />
           </View>
         )}
 
@@ -442,7 +501,11 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
         {isLover && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Amour</Text>
-            <ActionButton label="Passer du temps ensemble" description="+4 relation" onPress={doPasserTemps} variant="love" />
+            <ActionButton
+              label="Passer du temps ensemble" description="+4 relation"
+              disabled={!secondaryLeft} disabledReason={SOCIAL_SLOT_MSG}
+              onPress={doPasserTemps} variant="love"
+            />
             <ActionButton
               label="Demande en mariage"
               description="Score ≥ 80 · âge ≥ 16"
@@ -458,7 +521,11 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
         {showFlirt && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Romance</Text>
-            <ActionButton label="Flirter" description="Chance : rien / intérêt mutuel / rejet" onPress={doFlirter} variant="love" />
+            <ActionButton
+              label="Flirter" description="Chance : rien / intérêt mutuel / rejet"
+              disabled={!secondaryLeft} disabledReason={SOCIAL_SLOT_MSG}
+              onPress={doFlirter} variant="love"
+            />
             {relation.mutualInterest && (
               <ActionButton
                 label="Courtiser"
@@ -477,8 +544,16 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
         {/* HOSTILE ACTIONS — always available */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Hostilité</Text>
-          <ActionButton label="Se moquer" description="-5 relation" onPress={doMoquer} variant="danger" />
-          <ActionButton label="Insulter" description="-10 relation (peut créer un ennemi)" onPress={doInsulter} variant="danger" />
+          <ActionButton
+            label="Se moquer" description="-5 relation"
+            disabled={!secondaryLeft} disabledReason={SOCIAL_SLOT_MSG}
+            onPress={doMoquer} variant="danger"
+          />
+          <ActionButton
+            label="Insulter" description="-10 relation (peut créer un ennemi)"
+            disabled={!secondaryLeft} disabledReason={SOCIAL_SLOT_MSG}
+            onPress={doInsulter} variant="danger"
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -525,6 +600,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   feedbackText: { fontFamily: 'serif', fontSize: 13, color: Colors.textPrimary, fontStyle: 'italic', textAlign: 'center' },
+  slotInfo: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  slotInfoText: {
+    fontFamily: 'serif',
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+  },
   section: { gap: 8 },
   sectionTitle: {
     fontFamily: 'serif',

@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { CharacterCreationScreenProps } from '../navigation/types';
 import { useGameStore } from '../store/gameStore';
-import type { Background, SkinTone } from '../types/game';
+import type { Background, SkinTone, Hair } from '../types/game';
 import { Colors } from '../theme/colors';
 
 // ---------------------------------------------------------------------------
@@ -19,11 +19,13 @@ import { Colors } from '../theme/colors';
 // ---------------------------------------------------------------------------
 
 const SKIN_TONES: { id: SkinTone; color: string }[] = [
-  { id: 'tone1', color: '#F5C4B3' },
-  { id: 'tone2', color: '#EF9F27' },
-  { id: 'tone3', color: '#D85A30' },
-  { id: 'tone4', color: '#BA7517' },
-  { id: 'tone5', color: '#854F0B' },
+  { id: 'tone1', color: '#E8C4A0' }, // peau claire → skin1
+  { id: 'tone2', color: '#5A3A28' }, // peau foncée → skin2
+];
+
+const HAIR_COLORS: { id: Hair; color: string }[] = [
+  { id: 'hair1', color: '#4A2E18' }, // brun
+  { id: 'hair2', color: '#C9A24B' }, // blond
 ];
 
 const BACKGROUNDS: {
@@ -107,12 +109,16 @@ function StepName({
   );
 }
 
-function StepSkinTone({
-  selected,
-  onSelect,
+function StepAppearance({
+  skin,
+  hair,
+  onSelectSkin,
+  onSelectHair,
 }: {
-  selected: SkinTone;
-  onSelect: (t: SkinTone) => void;
+  skin: SkinTone;
+  hair: Hair;
+  onSelectSkin: (t: SkinTone) => void;
+  onSelectHair: (h: Hair) => void;
 }) {
   return (
     <View style={styles.stepBody}>
@@ -124,9 +130,25 @@ function StepSkinTone({
             style={[
               styles.toneCircle,
               { backgroundColor: tone.color },
-              selected === tone.id && styles.toneCircleSelected,
+              skin === tone.id && styles.toneCircleSelected,
             ]}
-            onPress={() => onSelect(tone.id)}
+            onPress={() => onSelectSkin(tone.id)}
+            activeOpacity={0.8}
+          />
+        ))}
+      </View>
+
+      <Text style={[styles.stepPrompt, { marginTop: 32 }]}>Vos cheveux</Text>
+      <View style={styles.toneRow}>
+        {HAIR_COLORS.map((h) => (
+          <TouchableOpacity
+            key={h.id}
+            style={[
+              styles.toneCircle,
+              { backgroundColor: h.color },
+              hair === h.id && styles.toneCircleSelected,
+            ]}
+            onPress={() => onSelectHair(h.id)}
             activeOpacity={0.8}
           />
         ))}
@@ -222,6 +244,7 @@ export default function CharacterCreationScreen({
   const [step, setStep] = useState<Step>(1);
   const [name, setName] = useState('');
   const [skinTone, setSkinTone] = useState<SkinTone>('tone1');
+  const [hair, setHair] = useState<Hair>('hair1');
   const [background, setBackground] = useState<Background>('noble');
 
   const initNewGame = useGameStore((state) => state.initNewGame);
@@ -235,8 +258,8 @@ export default function CharacterCreationScreen({
     if (step < 4) {
       setStep(((step + 1) as Step));
     } else {
-      initNewGame(name.trim(), background, skinTone);
-      navigation.replace('Game');
+      initNewGame(name.trim(), background, skinTone, hair);
+      navigation.replace('Intro');
     }
   };
 
@@ -280,7 +303,12 @@ export default function CharacterCreationScreen({
         >
           {step === 1 && <StepName name={name} onChange={setName} />}
           {step === 2 && (
-            <StepSkinTone selected={skinTone} onSelect={setSkinTone} />
+            <StepAppearance
+              skin={skinTone}
+              hair={hair}
+              onSelectSkin={setSkinTone}
+              onSelectHair={setHair}
+            />
           )}
           {step === 3 && (
             <StepBackground selected={background} onSelect={setBackground} />

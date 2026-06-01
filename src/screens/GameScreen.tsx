@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -14,9 +14,6 @@ import {
   MAX_PRINCIPAL_ACTIONS,
   MAX_SECONDARY_ACTIONS,
 } from '../store/gameStore';
-import EventModal from '../components/EventModal';
-import ActivityResultModal from '../components/ActivityResultModal';
-import type { ChangeLine } from '../utils/statLabels';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Game'>;
 
@@ -28,10 +25,6 @@ const MONTH_NAMES = [
 export default function GameScreen({ navigation }: Props) {
   const player = useGameStore((s) => s.player);
   const advanceMonth = useGameStore((s) => s.advanceMonth);
-  const pendingEvent = useGameStore((s) => s.pendingEvent);
-  const resolveEvent = useGameStore((s) => s.resolveEvent);
-
-  const [eventResult, setEventResult] = useState<{ lines: ChangeLine[]; note?: string } | null>(null);
 
   if (!player) return null;
 
@@ -60,16 +53,18 @@ export default function GameScreen({ navigation }: Props) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Map shortcut */}
+        {/* Map shortcut — primary gameplay entry point, made prominent */}
         <TouchableOpacity
           style={styles.mapBanner}
           onPress={() => navigation.navigate('VillageMap')}
+          activeOpacity={0.85}
         >
-          <Text style={styles.mapBannerText}>🗺 Carte du village</Text>
+          <Text style={styles.mapBannerIcon}>🗺</Text>
+          <Text style={styles.mapBannerText}>Carte du village</Text>
           <Text style={styles.mapBannerSub}>Explorez et agissez depuis la carte</Text>
         </TouchableOpacity>
 
-        <Text style={styles.sectionLabel}>Activités sociales</Text>
+        <Text style={styles.sectionLabel}>Autres menus</Text>
 
         <TouchableOpacity
           style={styles.activityButton}
@@ -122,25 +117,16 @@ export default function GameScreen({ navigation }: Props) {
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.advanceButton} onPress={advanceMonth}>
+        <TouchableOpacity
+          style={styles.advanceButton}
+          onPress={() => {
+            advanceMonth();
+            navigation.navigate('Character');
+          }}
+        >
           <Text style={styles.advanceText}>Passer au mois suivant →</Text>
         </TouchableOpacity>
       </ScrollView>
-      <EventModal
-        event={pendingEvent}
-        onChoose={(index) => {
-          const res = resolveEvent(index);
-          if (res.ok) setEventResult({ lines: res.lines ?? [], note: res.note });
-        }}
-      />
-
-      <ActivityResultModal
-        visible={eventResult !== null}
-        title="Conséquence de votre choix"
-        lines={eventResult?.lines ?? []}
-        note={eventResult?.note}
-        onClose={() => setEventResult(null)}
-      />
     </SafeAreaView>
   );
 }
@@ -233,25 +219,30 @@ const styles = StyleSheet.create({
   },
   mapBanner: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 4,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: Colors.accent,
+    paddingHorizontal: 20,
+    paddingVertical: 28,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  mapBannerIcon: {
+    fontSize: 40,
+    marginBottom: 6,
   },
   mapBannerText: {
     fontFamily: 'serif',
-    fontSize: 15,
+    fontSize: 22,
     fontWeight: '700',
     color: Colors.accent,
   },
   mapBannerSub: {
     fontFamily: 'serif',
-    fontSize: 12,
+    fontSize: 13,
     color: Colors.textSecondary,
     fontStyle: 'italic',
-    marginTop: 2,
+    marginTop: 4,
   },
   advanceButton: {
     backgroundColor: Colors.buttonBg,

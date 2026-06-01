@@ -13,16 +13,31 @@ import { Colors } from '../theme/colors';
 import { useGameStore } from '../store/gameStore';
 import PixelMap from '../components/PixelMap';
 import BottomSheet from '../components/BottomSheet';
+import ActivityResultModal from '../components/ActivityResultModal';
 import {
   EUROPE_MAP,
   TOURNAMENT_TYPE_COLORS,
   TOURNAMENT_TYPE_ICONS,
   TOURNAMENT_TYPE_LABELS,
   buildEuropePois,
+  buildBanditPois,
+  BANDIT_CAMPS,
 } from '../data/europemap';
+import type { BanditCamp } from '../data/europemap';
 import { TOURNAMENTS } from '../data/tournaments';
 import type { Tournament, TournamentType } from '../data/tournaments';
 import type { PointOfInterest } from '../components/PixelMap';
+import type { Player } from '../types/game';
+import type { ChangeLine } from '../utils/statLabels';
+
+/** Reputation below which bandits will shelter you. */
+const BANDIT_REST_REP_MAX = -20;
+
+/** Rough martial power used to resolve a bandit-camp fight. */
+function martialPower(p: Player): number {
+  const bestCombat = Math.max(0, ...Object.values(p.combatSkills));
+  return bestCombat + p.physicalStats.strength * 0.5 + p.physicalStats.endurance * 0.3;
+}
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EuropeMap'>;
 
@@ -221,14 +236,78 @@ function MapLegend() {
   );
 }
 
+// ─── Bandit camp sheet ─────────────────────────────────────────────────────────
+
+interface BanditSheetProps {
+  camp: BanditCamp;
+  player: Player;
+  onFight: () => void;
+  onRest: () => void;
+}
+
+function BanditSheet({ camp, player, onFight, onRest }: BanditSheetProps) {
+  const power = Math.round(martialPower(player));
+  const canRest = player.prestige.reputation < BANDIT_REST_REP_MAX;
+  const winChance = Math.min(0.9, Math.max(0.1, 0.5 + (power - camp.difficulty) / 100));
+
+  return (
+    <View style={sheetStyles.container}>
+      <Text style={sheetStyles.flavor}>
+        Un repaire de brigands qui rançonnent les routes alentour.
+      </Text>
+
+      <View style={sheetStyles.infoRow}>
+        <View style={sheetStyles.infoBlock}>
+          <Text style={sheetStyles.infoLabel}>Difficulté</Text>
+          <Text style={sheetStyles.infoValue}>{camp.difficulty}</Text>
+          <Text style={sheetStyles.infoNote}>Votre puissance : {power}</Text>
+        </View>
+        <View style={sheetStyles.infoBlock}>
+          <Text style={sheetStyles.infoLabel}>Si vous gagnez</Text>
+          <Text style={sheetStyles.prizeMoney}>{camp.rewardGold} g</Text>
+          <Text style={sheetStyles.prizeGlory}>+{camp.rewardGlory} gloire</Text>
+          <Text style={sheetStyles.prizeRep}>+honneur · +réputation</Text>
+        </View>
+        <View style={sheetStyles.infoBlock}>
+          <Text style={sheetStyles.infoLabel}>Chances</Text>
+          <Text style={sheetStyles.infoValue}>{Math.round(winChance * 100)}%</Text>
+        </View>
+      </View>
+
+      <TouchableOpacity style={sheetStyles.enterBtn} onPress={onFight} activeOpacity={0.8}>
+        <Text style={sheetStyles.enterBtnText}>⚔ Nettoyer le camp</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[sheetStyles.restBtn, !canRest && sheetStyles.enterBtnDisabled]}
+        onPress={onRest}
+        disabled={!canRest}
+        activeOpacity={0.8}
+      >
+        <Text style={[sheetStyles.enterBtnText, !canRest && sheetStyles.enterBtnTextDisabled]}>
+          🛖 Se reposer parmi eux
+        </Text>
+      </TouchableOpacity>
+      {!canRest && (
+        <Text style={sheetStyles.blockText}>
+          · Les brigands ne hébergent que les hors-la-loi (réputation &lt; {BANDIT_REST_REP_MAX}).
+        </Text>
+      )}
+    </View>
+  );
+}
+
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
 export default function EuropeMapScreen({ navigation }: Props) {
   const player = useGameStore((s) => s.player);
+  const applyStatDelta = useGameStore((s) => s.applyStatDelta);
+  const addToHistory = useGameStore((s) => s.addToHistory);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [result, setResult] = useState<{ title: string; lines: ChangeLine[]; note?: string } | null>(null);
 
   const pois = useMemo(
-    () => buildEuropePois(player?.prestige.glory ?? 0),
+    () => [...buildEuropePois(player?.prestige.glory ?? 0), ...buildBanditPois()],
     [player?.prestige.glory],
   );
 
@@ -236,6 +315,9 @@ export default function EuropeMapScreen({ navigation }: Props) {
 
   const selectedTournament = selectedId
     ? TOURNAMENTS.find((t) => t.id === selectedId) ?? null
+    : null;
+  const selectedCamp = selectedId
+    ? BANDIT_CAMPS.find((c) => c.id === selectedId) ?? null
     : null;
   const selectedPoi = selectedId ? pois.find((p) => p.id === selectedId) ?? null : null;
 
@@ -246,6 +328,58 @@ export default function EuropeMapScreen({ navigation }: Props) {
     if (!selectedTournament) return;
     closeSheet();
     navigation.navigate('Tournament', { tournamentId: selectedTournament.id });
+  };
+
+  const handleFight = () => {
+    if (!selectedCamp) return;
+    const camp = selectedCamp;
+    closeSheet();
+    const power = martialPower(player);
+    const winChance = Math.min(0.9, Math.max(0.1, 0.5 + (power - camp.difficulty) / 100));
+    if (Math.random() < winChance) {
+      applyStatDelta({ gold: camp.rewardGold, prestige: { glory: camp.rewardGlory, reputation: 3, honor: 3 } });
+      addToHistory(`Vous avez nettoyé ${camp.label}. Les routes sont plus sûres.`);
+      setResult({
+        title: camp.label,
+        note: 'Victoire ! Les brigands sont défaits.',
+        lines: [
+          { label: 'Or', value: camp.rewardGold },
+          { label: 'Gloire', value: camp.rewardGlory },
+          { label: 'Réputation', value: 3 },
+          { label: 'Honneur', value: 3 },
+        ],
+      });
+    } else {
+      applyStatDelta({ physicalStats: { strength: -3, endurance: -4 }, prestige: { glory: -2 } });
+      addToHistory(`Vous avez été repoussé par les brigands de ${camp.label}.`);
+      setResult({
+        title: camp.label,
+        note: 'Défaite… vous repartez blessé.',
+        lines: [
+          { label: 'Force', value: -3 },
+          { label: 'Endurance', value: -4 },
+          { label: 'Gloire', value: -2 },
+        ],
+      });
+    }
+  };
+
+  const handleRest = () => {
+    if (!selectedCamp) return;
+    const camp = selectedCamp;
+    closeSheet();
+    applyStatDelta({ gold: 8, physicalStats: { endurance: 2 }, prestige: { honor: -2, reputation: -2 } });
+    addToHistory(`Vous vous êtes terré parmi les brigands de ${camp.label}.`);
+    setResult({
+      title: camp.label,
+      note: 'Les brigands vous offrent gîte et butin — au prix de votre honneur.',
+      lines: [
+        { label: 'Or', value: 8 },
+        { label: 'Endurance', value: 2 },
+        { label: 'Honneur', value: -2 },
+        { label: 'Réputation', value: -2 },
+      ],
+    });
   };
 
   return (
@@ -290,11 +424,11 @@ export default function EuropeMapScreen({ navigation }: Props) {
         <MapLegend />
       </ScrollView>
 
-      {/* Tournament bottom sheet */}
+      {/* Location bottom sheet (tournament or bandit camp) */}
       <BottomSheet
-        visible={selectedTournament !== null}
+        visible={selectedTournament !== null || selectedCamp !== null}
         onClose={closeSheet}
-        title={`${selectedPoi?.icon ?? ''} ${selectedTournament?.name ?? ''}`}
+        title={`${selectedPoi?.icon ?? ''} ${selectedTournament?.name ?? selectedCamp?.label ?? ''}`}
       >
         {selectedTournament && (
           <TournamentSheet
@@ -303,7 +437,23 @@ export default function EuropeMapScreen({ navigation }: Props) {
             onTravel={handleTravel}
           />
         )}
+        {selectedCamp && (
+          <BanditSheet
+            camp={selectedCamp}
+            player={player}
+            onFight={handleFight}
+            onRest={handleRest}
+          />
+        )}
       </BottomSheet>
+
+      <ActivityResultModal
+        visible={result !== null}
+        title={result?.title ?? ''}
+        lines={result?.lines ?? []}
+        note={result?.note}
+        onClose={() => setResult(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -399,6 +549,13 @@ const sheetStyles = StyleSheet.create({
   enterBtnDisabled: { backgroundColor: Colors.surfaceDark, borderWidth: 1, borderColor: Colors.border },
   enterBtnText: { fontFamily: 'serif', fontSize: 14, fontWeight: '700', color: Colors.buttonText },
   enterBtnTextDisabled: { color: Colors.textSecondary },
+  restBtn: {
+    backgroundColor: '#5A4632',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 6,
+  },
 });
 
 const legendStyles = StyleSheet.create({

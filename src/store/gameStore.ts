@@ -10,6 +10,7 @@ import type {
   StatDelta,
   Background,
   SkinTone,
+  Hair,
   PhysicalStats,
 } from '../types/game';
 import { getBackgroundBonuses } from '../utils/backgrounds';
@@ -114,6 +115,7 @@ function makeDefaultPlayer(
   name: string,
   background: Background,
   skinTone: SkinTone,
+  hair: Hair,
 ): Player {
   const startingAge = 14;
 
@@ -122,6 +124,7 @@ function makeDefaultPlayer(
     name,
     age: startingAge,
     skinTone,
+    hair,
     background,
     religion: 'christian',
     gold: 10,
@@ -173,6 +176,7 @@ function makeDefaultPlayer(
     secondaryActionsUsed: 0,
     visitStreakLocation: null,
     visitStreakCount: 0,
+    templeVisits: 0,
     griefModifiers: [],
     activePlague: false,
   };
@@ -318,10 +322,15 @@ export interface GameState {
   pendingEvent: GameEvent | null;
 
   // Actions
-  initNewGame: (name: string, background: Background, skinTone: SkinTone) => void;
+  initNewGame: (name: string, background: Background, skinTone: SkinTone, hair: Hair) => void;
   advanceMonth: () => void;
   /** Performs a village activity, honouring the monthly action limits. */
   performActivity: (req: ActivityRequest) => ActivityResult;
+  /**
+   * Consumes one monthly action slot if available, returning true on success.
+   * Used to gate relation interactions against the same economy as village activities.
+   */
+  consumeActionSlot: (kind: 'principal' | 'secondary') => boolean;
   /** Resolves the pending event and returns a summary of what changed. */
   resolveEvent: (outcomeIndex: number) => ActivityResult;
   applyStatDelta: (delta: StatDelta) => void;
@@ -348,8 +357,8 @@ export const useGameStore = create<GameState>()(
       player: null,
       pendingEvent: null,
 
-      initNewGame: (name, background, skinTone) => {
-        const player = makeDefaultPlayer(name, background, skinTone);
+      initNewGame: (name, background, skinTone, hair) => {
+        const player = makeDefaultPlayer(name, background, skinTone, hair);
         set({ player, pendingEvent: null });
       },
 
@@ -657,6 +666,11 @@ export const useGameStore = create<GameState>()(
           noteParts.push("Rien d'intéressant cette fois-ci.");
         }
 
+        // Track cumulative temple visits (affects church access)
+        if (req.location === 'temple') {
+          next = { ...next, templeVisits: (next.templeVisits ?? 0) + 1 };
+        }
+
         // 6. Consecutive-visit streak (tavern penalty / church bonus)
         if (req.location) {
           const sameLoc = (next.visitStreakLocation ?? null) === req.location;
@@ -691,6 +705,30 @@ export const useGameStore = create<GameState>()(
 
         set({ player: next });
         return { ok: true, lines, note: noteParts.length ? noteParts.join(' ') : undefined };
+      },
+
+      consumeActionSlot: (kind) => {
+        const { player } = get();
+        if (!player) return false;
+        if (kind === 'principal') {
+          if ((player.principalActionsUsed ?? 0) >= MAX_PRINCIPAL_ACTIONS) return false;
+          set({
+            player: {
+              ...player,
+              principalActionsUsed: (player.principalActionsUsed ?? 0) + 1,
+              skillActivityUsedThisMonth: true,
+            },
+          });
+          return true;
+        }
+        if ((player.secondaryActionsUsed ?? 0) >= MAX_SECONDARY_ACTIONS) return false;
+        set({
+          player: {
+            ...player,
+            secondaryActionsUsed: (player.secondaryActionsUsed ?? 0) + 1,
+          },
+        });
+        return true;
       },
 
       addToHistory: (text) => {

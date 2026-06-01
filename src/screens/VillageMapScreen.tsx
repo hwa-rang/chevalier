@@ -23,6 +23,7 @@ import { VILLAGE_MAP, VILLAGE_POIS } from '../data/villagemap';
 import type { PointOfInterest } from '../components/PixelMap';
 import type { Player, StatDelta } from '../types/game';
 import type { ChangeLine } from '../utils/statLabels';
+import { getZoneAccess, type ZoneAccess } from '../utils/zoneAccess';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'VillageMap'>;
 
@@ -144,9 +145,10 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
   ],
   tavern: [
     {
-      id: 'visitTavern', label: 'Boire et socialiser', desc: 'Rencontrer des gens — parfois on s’y fait un ami.',
+      id: 'visitTavern', label: 'Boire et socialiser', desc: 'Payer une tournée (1 g). On s’y fait parfois un ami.',
       kind: 'secondary',
-      req: () => ({ location: 'tavern', meetRandomFriend: true }),
+      cond: (p) => p.gold < 1, condMsg: "Pas assez d'or (1 g).",
+      req: () => ({ location: 'tavern', statDelta: { gold: -1 }, meetRandomFriend: true }),
     },
     {
       id: 'playChess', label: 'Jouer aux échecs', desc: 'Défier un adversaire local. Requiert un jeu.',
@@ -331,6 +333,13 @@ export default function VillageMapScreen({ navigation }: Props) {
   const locId = selectedPoi?.id as LocationId | undefined;
   const activities = locId ? (LOCATION_ACTIVITIES[locId] ?? []) : [];
   const flavor = locId ? LOCATION_FLAVOR[locId] : '';
+  const access: ZoneAccess = locId ? getZoneAccess(player, locId) : { forbidden: false };
+
+  // Grey out forbidden zones on the map itself.
+  const pois = VILLAGE_POIS.map((p) => ({
+    ...p,
+    locked: getZoneAccess(player, p.id).forbidden,
+  }));
 
   /** Returns lock state + message for an activity given the current player. */
   const lockState = (act: Activity): { locked: boolean; msg: string } => {
@@ -408,7 +417,7 @@ export default function VillageMapScreen({ navigation }: Props) {
       <View style={styles.mapWrap}>
         <PixelMap
           mapData={VILLAGE_MAP}
-          pois={VILLAGE_POIS}
+          pois={pois}
           onPoiPress={handlePoiPress}
           width={mapPx}
           height={mapPx}
@@ -418,7 +427,14 @@ export default function VillageMapScreen({ navigation }: Props) {
 
       {/* Advance month */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.advanceBtn} onPress={advanceMonth} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.advanceBtn}
+          onPress={() => {
+            advanceMonth();
+            navigation.navigate('Character');
+          }}
+          activeOpacity={0.85}
+        >
           <Text style={styles.advanceText}>Passer au mois suivant →</Text>
         </TouchableOpacity>
       </View>
@@ -431,7 +447,11 @@ export default function VillageMapScreen({ navigation }: Props) {
       >
         {flavor ? <Text style={styles.flavor}>{flavor}</Text> : null}
 
-        {activities.length > 0 ? (
+        {access.forbidden ? (
+          <View style={styles.forbiddenBox}>
+            <Text style={styles.forbiddenText}>🚫 {access.reason}</Text>
+          </View>
+        ) : activities.length > 0 ? (
           <View style={styles.activityList}>
             <Text style={styles.activityHeader}>Activités disponibles</Text>
             {activities.map((act) => {
@@ -603,6 +623,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     marginTop: 8,
+  },
+  forbiddenBox: {
+    backgroundColor: '#E8D6C0',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#9A3A2A',
+    padding: 16,
+  },
+  forbiddenText: {
+    fontFamily: 'serif',
+    fontSize: 14,
+    color: '#9A3A2A',
+    textAlign: 'center',
+    lineHeight: 20,
+    fontStyle: 'italic',
   },
   activityList: { gap: 6 },
   activityHeader: {

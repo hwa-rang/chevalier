@@ -23,6 +23,7 @@ export interface GameEvent {
     maxAge?: number;
     minGlory?: number;
     minReputation?: number;
+    maxReputation?: number;
     minHonor?: number;
     maxHonor?: number;
     requiresItem?: string; // matches item.subtype
@@ -37,6 +38,103 @@ export interface GameEvent {
 // ---------------------------------------------------------------------------
 
 export const MONTHLY_EVENTS: GameEvent[] = [
+  // ── LAW & FAITH TROUBLES (low reputation only) ─────────────────────────────
+  // These only become eligible once your reputation sinks, so they grow more
+  // frequent the more notorious you are.
+
+  {
+    id: 'monthly_lawfaith_false_accusation',
+    type: 'monthly',
+    title: 'Une accusation',
+    description:
+      "Un bourgeois vous accuse publiquement d'un vol que vous n'avez pas commis. Votre réputation joue contre vous.",
+    conditions: { maxReputation: -10 },
+    outcomes: [
+      {
+        label: 'Chercher un témoin pour vous disculper',
+        statDelta: { prestige: { reputation: 1 } },
+        historyText:
+          "Un voisin honnête témoigne en votre faveur. L'affaire est classée — de justesse.",
+      },
+      {
+        label: 'Fuir devant la foule',
+        statDelta: { prestige: { honor: -4, reputation: -3 } },
+        historyText:
+          'Votre fuite passe pour un aveu. Votre réputation en pâtit davantage.',
+      },
+      {
+        label: 'Soudoyer l’accusateur',
+        goldDelta: -10,
+        historyText: 'Quelques pièces font taire les langues. Pour cette fois.',
+      },
+    ],
+  },
+
+  {
+    id: 'monthly_lawfaith_guard_shakedown',
+    type: 'monthly',
+    title: 'Un garde trop zélé',
+    description:
+      'Un homme du guet vous arrête sans motif et vous somme de vous justifier ou de payer une « amende ».',
+    conditions: { maxReputation: -20 },
+    outcomes: [
+      {
+        label: "Payer l'amende",
+        goldDelta: -8,
+        historyText: 'Vous payez pour avoir la paix. Le garde sourit.',
+      },
+      {
+        label: 'Protester',
+        statDelta: { physicalStats: { endurance: -2 }, prestige: { reputation: -2 } },
+        historyText: 'Votre protestation vous vaut quelques coups de bâton.',
+      },
+    ],
+  },
+
+  {
+    id: 'monthly_lawfaith_sermon_against_you',
+    type: 'monthly',
+    title: 'Sermon accusateur',
+    description:
+      "Du haut de sa chaire, le prêtre dénonce les âmes corrompues du village. Tous les regards se tournent vers vous.",
+    conditions: { maxReputation: -15 },
+    outcomes: [
+      {
+        label: 'Faire un don de contrition à l’église',
+        goldDelta: -6,
+        statDelta: { prestige: { honor: 2 } },
+        historyText: 'Votre don apaise les esprits. On murmure que vous vous repentez.',
+      },
+      {
+        label: 'Quitter la messe avec mépris',
+        statDelta: { prestige: { reputation: -3 } },
+        relationDelta: { relationType: 'priest', amount: -8 },
+        historyText: 'Votre insolence choque. Le prêtre ne vous le pardonnera pas.',
+      },
+    ],
+  },
+
+  {
+    id: 'monthly_lawfaith_theft_victim',
+    type: 'monthly',
+    title: 'Volé à votre tour',
+    description:
+      'On vous a dérobé votre bourse pendant la nuit. Dans votre quartier mal famé, nul ne s’en émeut.',
+    conditions: { maxReputation: -25 },
+    outcomes: [
+      {
+        label: 'Encaisser la perte',
+        goldDelta: -7,
+        historyText: 'Vous comptez vos pertes en silence.',
+      },
+      {
+        label: 'Accuser un voisin au hasard',
+        statDelta: { prestige: { honor: -3, reputation: -2 } },
+        historyText: 'Votre accusation gratuite envenime encore vos rapports au village.',
+      },
+    ],
+  },
+
   // ── ILLNESS ──────────────────────────────────────────────────────────────
 
   {
