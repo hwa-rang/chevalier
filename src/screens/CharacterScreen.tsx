@@ -292,43 +292,6 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 4,
   },
-  previewHint: {
-    fontFamily: 'serif',
-    fontSize: 11,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginTop: 12,
-    marginBottom: 6,
-  },
-  previewRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  previewChip: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
-  previewChipOn: {
-    backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
-  },
-  previewChipText: {
-    fontFamily: 'serif',
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  previewChipTextOn: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-
   card: {
     backgroundColor: Colors.surface,
     borderRadius: 12,

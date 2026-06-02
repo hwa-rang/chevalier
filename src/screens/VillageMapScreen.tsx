@@ -616,14 +616,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     lineHeight: 19,
   },
-  riverMsg: {
-    fontFamily: 'serif',
-    fontSize: 14,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginTop: 8,
-  },
   forbiddenBox: {
     backgroundColor: '#E8D6C0',
     borderRadius: 10,

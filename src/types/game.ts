@@ -150,6 +150,10 @@ export interface Player {
   inventory: Item[];
   /** Worn equipment, by slot (subtype values). */
   equipment: Equipment;
+  /** How many of each subtype the merchant has bought back (caps re-selling). */
+  merchantStock: Record<string, number>;
+  /** Absolute month (year*12+month) when the current merchant-stock window began. */
+  merchantStockMonth: number;
   relations: Relation[];
   tournamentRecord: TournamentRecord;
   followers: number;

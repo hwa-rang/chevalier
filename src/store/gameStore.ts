@@ -28,6 +28,11 @@ export const MAX_SECONDARY_ACTIONS = 4;
 /** Visiting the same place this many times in a row triggers a streak effect. */
 const STREAK_THRESHOLD = 3;
 
+// Merchant resale rules.
+export const ITEM_SELL_PRICE = 1;          // derisory price per resold item
+export const MERCHANT_MAX_PER_ITEM = 5;    // merchant refuses a 6th identical item
+const MERCHANT_RESET_MONTHS = 6;           // merchant stock clears every 6 months
+
 // ---------------------------------------------------------------------------
 // Opposed stats helpers
 // ---------------------------------------------------------------------------
@@ -168,6 +173,8 @@ function makeDefaultPlayer(
     },
     inventory: [],
     equipment: { ...EMPTY_EQUIPMENT },
+    merchantStock: {},
+    merchantStockMonth: GAME_START_YEAR * 12 + 1,
     relations: generateFamily(startingAge),
     tournamentRecord: { wins: 0, losses: 0, titles: [] },
     followers: 0,
@@ -352,6 +359,8 @@ export interface GameState {
   removeRelation: (personId: string) => void;
   /** Atomically deducts gold and adds item. No-ops if gold insufficient. */
   purchaseItem: (item: Item, cost: number) => void;
+  /** Sells one item of a subtype to the merchant (refused past the per-item cap). */
+  sellItem: (subtype: string) => ActivityResult;
   /** Deducts travel+entry cost and advances time by travelMonths (no event roll). */
   travelToTournament: (totalCost: number, months: number) => void;
   /** Updates tournamentRecord, applies prestige/gold prizes, logs history. */
@@ -395,6 +404,12 @@ export const useGameStore = create<GameState>()(
         };
 
         const absMonth = year * 12 + month;
+
+        // Merchant restocks (clears bought-back items) every few months.
+        const stockStart = updatedPlayer.merchantStockMonth ?? absMonth;
+        if (absMonth - stockStart >= MERCHANT_RESET_MONTHS) {
+          updatedPlayer = { ...updatedPlayer, merchantStock: {}, merchantStockMonth: absMonth };
+        }
 
         // Expire grief modifiers
         const expiredGriefs = updatedPlayer.griefModifiers.filter(
@@ -806,6 +821,41 @@ export const useGameStore = create<GameState>()(
             inventory: [...player.inventory, item],
           },
         });
+      },
+
+      sellItem: (subtype) => {
+        const { player } = get();
+        if (!player) return { ok: false, reason: 'Aucun personnage.' };
+
+        const stock = player.merchantStock ?? {};
+        if ((stock[subtype] ?? 0) >= MERCHANT_MAX_PER_ITEM) {
+          return { ok: false, reason: "Le marchand en a déjà trop — il refuse d'en acheter plus." };
+        }
+
+        const idx = player.inventory.findIndex((i) => i.subtype === subtype);
+        if (idx < 0) return { ok: false, reason: "Vous n'avez pas cet objet." };
+
+        const inventory = player.inventory.filter((_, i) => i !== idx);
+
+        // Unequip if that was the last copy of an equipped item.
+        let equipment = player.equipment ?? EMPTY_EQUIPMENT;
+        if (!inventory.some((i) => i.subtype === subtype)) {
+          const slot = slotForSubtype(subtype);
+          if (slot && equipment[slot] === subtype) {
+            equipment = { ...equipment, [slot]: null };
+          }
+        }
+
+        set({
+          player: {
+            ...player,
+            inventory,
+            equipment,
+            gold: player.gold + ITEM_SELL_PRICE,
+            merchantStock: { ...stock, [subtype]: (stock[subtype] ?? 0) + 1 },
+          },
+        });
+        return { ok: true };
       },
 
       travelToTournament: (totalCost, months) => {
