@@ -10,15 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { CharacterScreenProps } from '../navigation/types';
 import { Colors } from '../theme/colors';
 import { useGameStore } from '../store/gameStore';
-import CharacterSprite, { type EquipmentVisibility } from '../components/CharacterSprite';
-
-const PREVIEW_LABELS: Record<keyof EquipmentVisibility, string> = {
-  armor: 'Armure',
-  helmet: 'Casque',
-  shield: 'Bouclier',
-  weapon: 'Épée',
-};
-const PREVIEW_KEYS: (keyof EquipmentVisibility)[] = ['armor', 'helmet', 'shield', 'weapon'];
+import CharacterSprite from '../components/CharacterSprite';
 
 const BACKGROUND_LABELS: Record<string, string> = {
   noble: 'Noble',
@@ -48,14 +40,6 @@ function fameTierColor(glory: number): string {
 export default function CharacterScreen({ navigation }: CharacterScreenProps) {
   const player = useGameStore((s) => s.player);
   const [flipped, setFlipped] = useState(false);
-  const [preview, setPreview] = useState<EquipmentVisibility>({});
-  const togglePreview = (k: keyof EquipmentVisibility) =>
-    setPreview((p) => {
-      const next = { ...p };
-      if (next[k]) delete next[k];
-      else next[k] = true;
-      return next;
-    });
   const spriteScale = useRef(new Animated.Value(1)).current;
   const prevInvLen  = useRef(player?.inventory.length ?? 0);
 
@@ -97,30 +81,18 @@ export default function CharacterScreen({ navigation }: CharacterScreenProps) {
         {/* ── Character viewer ── */}
         <View style={styles.viewerContainer}>
           <Animated.View style={{ transform: [{ scale: spriteScale }] }}>
-            <CharacterSprite player={player} flipped={flipped} preview={preview} />
+            <CharacterSprite player={player} flipped={flipped} />
           </Animated.View>
           <Text style={styles.viewerName}>{player.name}</Text>
           <Text style={styles.viewerAge}>{player.age} ans</Text>
           <Text style={[styles.viewerTier, { color: tierColor }]}>{tier}</Text>
-          <TouchableOpacity onPress={() => setFlipped((f) => !f)} style={styles.flipBtn}>
-            <Text style={styles.flipBtnText}>Retourner</Text>
-          </TouchableOpacity>
-
-          {/* Equipment preview (test tool) */}
-          <Text style={styles.previewHint}>Aperçu équipement</Text>
-          <View style={styles.previewRow}>
-            {PREVIEW_KEYS.map((k) => (
-              <TouchableOpacity
-                key={k}
-                onPress={() => togglePreview(k)}
-                style={[styles.previewChip, preview[k] && styles.previewChipOn]}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.previewChipText, preview[k] && styles.previewChipTextOn]}>
-                  {PREVIEW_LABELS[k]}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <View style={styles.viewerActions}>
+            <TouchableOpacity onPress={() => setFlipped((f) => !f)} style={styles.flipBtn}>
+              <Text style={styles.flipBtnText}>Retourner</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Inventory')} style={styles.flipBtn}>
+              <Text style={styles.flipBtnText}>Équipement</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -314,6 +286,11 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontSize: 13,
     color: Colors.textPrimary,
+  },
+  viewerActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
   },
   previewHint: {
     fontFamily: 'serif',

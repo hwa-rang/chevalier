@@ -10,6 +10,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
 import { useGameStore } from '../store/gameStore';
+import { slotForSubtype, EMPTY_EQUIPMENT } from '../utils/equipment';
 import type { Item, ItemCategory } from '../types/game';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Inventory'>;
@@ -67,9 +68,12 @@ function groupItems(inventory: Item[]): Section[] {
 
 export default function InventoryScreen({ navigation }: Props) {
   const player = useGameStore((s) => s.player);
+  const equipItem = useGameStore((s) => s.equipItem);
+  const unequipSlot = useGameStore((s) => s.unequipSlot);
 
   if (!player) return null;
 
+  const equipment = player.equipment ?? EMPTY_EQUIPMENT;
   const sections = groupItems(player.inventory);
 
   return (
@@ -99,16 +103,31 @@ export default function InventoryScreen({ navigation }: Props) {
               <Text style={styles.sectionTitle}>{section.title}</Text>
             </View>
           )}
-          renderItem={({ item }) => (
-            <View style={styles.itemRow}>
-              <Text style={styles.itemName}>{item.name}</Text>
-              {item.quantity > 1 && (
-                <View style={styles.quantityBadge}>
-                  <Text style={styles.quantityText}>×{item.quantity}</Text>
-                </View>
-              )}
-            </View>
-          )}
+          renderItem={({ item }) => {
+            const slot = slotForSubtype(item.subtype);
+            const equipped = slot ? equipment[slot] === item.subtype : false;
+            return (
+              <View style={styles.itemRow}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                {item.quantity > 1 && (
+                  <View style={styles.quantityBadge}>
+                    <Text style={styles.quantityText}>×{item.quantity}</Text>
+                  </View>
+                )}
+                {slot && (
+                  <TouchableOpacity
+                    style={[styles.equipBtn, equipped && styles.equipBtnOn]}
+                    onPress={() => (equipped ? unequipSlot(slot) : equipItem(item.subtype))}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.equipBtnText, equipped && styles.equipBtnTextOn]}>
+                      {equipped ? 'Équipé ✓' : 'Équiper'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          }}
           stickySectionHeadersEnabled={false}
         />
       )}
@@ -206,6 +225,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: Colors.tagText,
+  },
+  equipBtn: {
+    backgroundColor: Colors.surfaceDark,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  equipBtnOn: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  equipBtnText: {
+    fontFamily: 'serif',
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+  },
+  equipBtnTextOn: {
+    color: '#FFFFFF',
   },
   emptyContainer: {
     flex: 1,

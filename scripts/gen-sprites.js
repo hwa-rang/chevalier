@@ -11,8 +11,13 @@ const map = {
   bodyS2H1: 'body-skin2-hair1.svg',
   bodyS2H2: 'body-skin2-hair2.svg',
   armorCuirass: 'armor-cuirass.svg',
+  chainmailS1: 'armor-chainmail-skin1.svg',
+  chainmailS2: 'armor-chainmail-skin2.svg',
   shieldMedium: 'shield-medium.svg',
+  shieldLarge: 'shield-large.svg',
   helmet1: 'helmet-1.svg',
+  helmet2: 'helmet-2.svg',
+  helmetChristian: 'helmet-christian.svg',
   weaponShortsword: 'weapon-shortsword.svg',
 };
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import type { Player } from '../types/game';
+import { EMPTY_EQUIPMENT } from '../utils/equipment';
 import * as S from '../assets/sprites/svg/spriteData';
 
 // One memoised layer — parses its SVG string only when xml/size change.
@@ -16,40 +17,67 @@ const Layer = React.memo(function Layer({ xml, size }: { xml: string; size: numb
   );
 });
 
-// Body sprite chosen by skin tone × hair colour.
-const BODY: Record<'skin1' | 'skin2', Record<'hair1' | 'hair2', string>> = {
+type Skin = 'skin1' | 'skin2';
+
+const BODY: Record<Skin, Record<'hair1' | 'hair2', string>> = {
   skin1: { hair1: S.bodyS1H1, hair2: S.bodyS1H2 },
   skin2: { hair1: S.bodyS2H1, hair2: S.bodyS2H2 },
 };
 
-/** Which equipment layers to show. Overrides ownership when provided (preview). */
-export interface EquipmentVisibility {
-  armor?: boolean;
-  helmet?: boolean;
-  shield?: boolean;
-  weapon?: boolean;
+// ─── Equipment sprite resolvers (subtype → SVG string, null if no art) ─────────
+
+function helmetSprite(subtype: string): string | null {
+  switch (subtype) {
+    case 'helmet': return S.helmet1;
+    case 'helmet_visor': return S.helmet2;
+    case 'helmet_crusader': return S.helmetChristian;
+    default: return null;
+  }
+}
+
+function armorSprite(subtype: string, skin: Skin): string | null {
+  switch (subtype) {
+    case 'chainmail': return skin === 'skin1' ? S.chainmailS1 : S.chainmailS2;
+    case 'full_plate': return S.armorCuirass;
+    default: return null;
+  }
+}
+
+function shieldSprite(subtype: string): string | null {
+  switch (subtype) {
+    case 'shield': return S.shieldMedium;
+    case 'shield_large': return S.shieldLarge;
+    default: return null;
+  }
+}
+
+function weaponSprite(subtype: string): string | null {
+  switch (subtype) {
+    case 'long_sword':
+    case 'sword_shield': return S.weaponShortsword;
+    default: return null;
+  }
 }
 
 interface Props {
   player: Player;
   flipped?: boolean;
   size?: number;
-  /** Force specific layers on/off (used by the character-screen preview). */
-  preview?: EquipmentVisibility;
 }
 
-export default function CharacterSprite({ player, flipped = false, size = 192, preview }: Props) {
-  const skin = player.skinTone === 'tone1' ? 'skin1' : 'skin2';
+export default function CharacterSprite({ player, flipped = false, size = 192 }: Props) {
+  const skin: Skin = player.skinTone === 'tone1' ? 'skin1' : 'skin2';
   const hair = player.hair ?? 'hair1';
   const bodyXml = BODY[skin][hair];
 
-  const owns = (pred: (subtype: string, category: string) => boolean) =>
-    player.inventory.some((i) => pred(i.subtype, i.category));
+  const eq = player.equipment ?? EMPTY_EQUIPMENT;
+  // Only show a slot if the player still owns the equipped item.
+  const owns = (sub: string | null) => !!sub && player.inventory.some((i) => i.subtype === sub);
 
-  const showArmor  = preview?.armor  ?? owns((_s, c) => c === 'armor');
-  const showHelmet = preview?.helmet ?? owns((s) => s === 'helmet' || s === 'full_plate');
-  const showShield = preview?.shield ?? owns((s) => s === 'shield');
-  const showWeapon = preview?.weapon ?? owns((s) => s === 'long_sword' || s === 'sword_shield' || s === 'short_sword');
+  const armorXml  = owns(eq.armor)  ? armorSprite(eq.armor as string, skin) : null;
+  const helmetXml = owns(eq.helmet) ? helmetSprite(eq.helmet as string) : null;
+  const shieldXml = owns(eq.shield) ? shieldSprite(eq.shield as string) : null;
+  const weaponXml = owns(eq.weapon) ? weaponSprite(eq.weapon as string) : null;
 
   return (
     <View
@@ -60,10 +88,10 @@ export default function CharacterSprite({ player, flipped = false, size = 192, p
     >
       {/* Stacked back → front */}
       <Layer xml={bodyXml} size={size} />
-      {showArmor && <Layer xml={S.armorCuirass} size={size} />}
-      {showHelmet && <Layer xml={S.helmet1} size={size} />}
-      {showShield && <Layer xml={S.shieldMedium} size={size} />}
-      {showWeapon && <Layer xml={S.weaponShortsword} size={size} />}
+      {armorXml && <Layer xml={armorXml} size={size} />}
+      {helmetXml && <Layer xml={helmetXml} size={size} />}
+      {shieldXml && <Layer xml={shieldXml} size={size} />}
+      {weaponXml && <Layer xml={weaponXml} size={size} />}
     </View>
   );
 }

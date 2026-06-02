@@ -11,8 +11,10 @@ import type {
   Background,
   SkinTone,
   Hair,
+  EquipSlot,
   PhysicalStats,
 } from '../types/game';
+import { slotForSubtype, EMPTY_EQUIPMENT } from '../utils/equipment';
 import { getBackgroundBonuses } from '../utils/backgrounds';
 import { generateFamily } from '../utils/familyGenerator';
 import { makeNpc, makeRandomFriend } from '../utils/relationGenerator';
@@ -165,6 +167,7 @@ function makeDefaultPlayer(
       honor: 0,
     },
     inventory: [],
+    equipment: { ...EMPTY_EQUIPMENT },
     relations: generateFamily(startingAge),
     tournamentRecord: { wins: 0, losses: 0, titles: [] },
     followers: 0,
@@ -341,6 +344,10 @@ export interface GameState {
   applyReligionRelationDelta: (christianDelta: number, paganDelta: number) => void;
   addToHistory: (text: string) => void;
   addItem: (item: Item) => void;
+  /** Equips an owned item subtype into its slot (no-op if not owned or not equippable). */
+  equipItem: (subtype: string) => void;
+  /** Clears a single equipment slot. */
+  unequipSlot: (slot: EquipSlot) => void;
   addRelation: (relation: Relation) => void;
   removeRelation: (personId: string) => void;
   /** Atomically deducts gold and adds item. No-ops if gold insufficient. */
@@ -746,6 +753,23 @@ export const useGameStore = create<GameState>()(
         const { player } = get();
         if (!player) return;
         set({ player: { ...player, inventory: [...player.inventory, item] } });
+      },
+
+      equipItem: (subtype) => {
+        const { player } = get();
+        if (!player) return;
+        const slot = slotForSubtype(subtype);
+        if (!slot) return;
+        if (!player.inventory.some((i) => i.subtype === subtype)) return;
+        const equipment = { ...(player.equipment ?? EMPTY_EQUIPMENT), [slot]: subtype };
+        set({ player: { ...player, equipment } });
+      },
+
+      unequipSlot: (slot) => {
+        const { player } = get();
+        if (!player) return;
+        const equipment = { ...(player.equipment ?? EMPTY_EQUIPMENT), [slot]: null };
+        set({ player: { ...player, equipment } });
       },
 
       addRelation: (relation) => {

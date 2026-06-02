@@ -125,11 +125,35 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     catalogId: 'shield',
-    name: 'Bouclier',
+    name: 'Bouclier moyen',
     category: 'armor',
     subtype: 'shield',
     price: 30,
     description: 'Défense essentielle au combat.',
+  },
+  {
+    catalogId: 'shield_large',
+    name: 'Grand bouclier',
+    category: 'armor',
+    subtype: 'shield_large',
+    price: 55,
+    description: 'Large protection, plus lourd à porter.',
+  },
+  {
+    catalogId: 'helmet_visor',
+    name: 'Casque à visière',
+    category: 'armor',
+    subtype: 'helmet_visor',
+    price: 45,
+    description: 'Heaume fermé protégeant tout le visage.',
+  },
+  {
+    catalogId: 'helmet_crusader',
+    name: 'Heaume de croisé',
+    category: 'armor',
+    subtype: 'helmet_crusader',
+    price: 60,
+    description: 'Casque imposant des chevaliers de la croix.',
   },
 
   // BOOKS — no restrictions to buy

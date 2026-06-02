@@ -3,6 +3,11 @@ export type SkinTone = 'tone1' | 'tone2' | 'tone3' | 'tone4' | 'tone5';
 /** Hair colour for the character sprite. */
 export type Hair = 'hair1' | 'hair2';
 
+/** Wearable equipment slots. */
+export type EquipSlot = 'helmet' | 'armor' | 'shield' | 'weapon';
+/** Currently-worn item subtype per slot (null = nothing equipped). */
+export type Equipment = Record<EquipSlot, string | null>;
+
 export type Religion = 'christian' | 'pagan';
 
 export type Background =
@@ -143,6 +148,8 @@ export interface Player {
   craftSkills: CraftSkills;
   prestige: Prestige;
   inventory: Item[];
+  /** Worn equipment, by slot (subtype values). */
+  equipment: Equipment;
   relations: Relation[];
   tournamentRecord: TournamentRecord;
   followers: number;
