@@ -22,7 +22,26 @@ import { formatStatDelta, type ChangeLine } from '../utils/statLabels';
 import type { GameEvent } from '../data/events';
 import { rollMonthlyEvent, rollAnnualEvent } from '../utils/eventEngine';
 
-// Action economy: one skill action + four social actions per month.
+// Action economy: a single fatigue gauge spent each month.
+// Capacity 8 "units": a principal action costs ½ (4), a secondary costs ⅛ (1).
+// → 2 principals, OR 1 principal + 4 secondaries, OR 8 secondaries, then exhausted.
+export const ENERGY_CAPACITY = 8;
+export const PRINCIPAL_COST = 4;
+export const SECONDARY_COST = 1;
+
+/** Fatigue units already spent this month (0 = fully rested). */
+export function energyUsed(
+  p: { principalActionsUsed?: number; secondaryActionsUsed?: number },
+): number {
+  return (p.principalActionsUsed ?? 0) * PRINCIPAL_COST + (p.secondaryActionsUsed ?? 0) * SECONDARY_COST;
+}
+
+/** Energy cost of an action kind. */
+export function energyCost(kind: 'principal' | 'secondary'): number {
+  return kind === 'principal' ? PRINCIPAL_COST : SECONDARY_COST;
+}
+
+// Legacy display caps (kept for any external reference; gating now uses energy).
 export const MAX_PRINCIPAL_ACTIONS = 1;
 export const MAX_SECONDARY_ACTIONS = 4;
 /** Visiting the same place this many times in a row triggers a streak effect. */
@@ -102,6 +121,54 @@ function pickGriefStat(): { statGroup: GriefModifier['statGroup']; statKey: stri
   return GRIEF_STAT_POOL[Math.floor(Math.random() * GRIEF_STAT_POOL.length)];
 }
 
+// ---------------------------------------------------------------------------
+// Knowledge-based equipment unlocks (not sold — earned at very high knowledge)
+// ---------------------------------------------------------------------------
+
+const SKILL_HELMET_UNLOCKS: Array<{
+  skill: keyof Player['knowledgeSkills'];
+  threshold: number;
+  subtype: string;
+  name: string;
+  note: string;
+}> = [
+  {
+    skill: 'religion',
+    threshold: 60,
+    subtype: 'helmet_crusader',
+    name: 'Bascinet avec visière à croix',
+    note: 'Votre profonde ferveur religieuse vous vaut un bascinet à visière en croix.',
+  },
+  {
+    skill: 'apocryphal',
+    threshold: 60,
+    subtype: 'helmet_apocryphal',
+    name: 'Heaume des anciens dieux',
+    note: 'Vos connaissances apocryphes vous attirent un heaume marqué de symboles oubliés.',
+  },
+];
+
+/** Grants any knowledge-gated helmet the player now qualifies for and doesn't own. */
+function grantSkillUnlocks(player: Player): { player: Player; notes: string[] } {
+  let p = player;
+  const notes: string[] = [];
+  for (const u of SKILL_HELMET_UNLOCKS) {
+    const level = p.knowledgeSkills[u.skill] ?? 0;
+    const owned = p.inventory.some((i) => i.subtype === u.subtype);
+    if (level >= u.threshold && !owned) {
+      p = {
+        ...p,
+        inventory: [
+          ...p.inventory,
+          { id: uuidv4(), name: u.name, category: 'armor', subtype: u.subtype },
+        ],
+      };
+      notes.push(u.note);
+    }
+  }
+  return { player: p, notes };
+}
+
 function buildGriefDelta(statGroup: GriefModifier['statGroup'], statKey: string, amount: number): StatDelta {
   switch (statGroup) {
     case 'physicalStats': return { physicalStats: { [statKey as keyof PhysicalStats]: amount } };
@@ -116,7 +183,7 @@ function buildGriefDelta(statGroup: GriefModifier['statGroup'], statKey: string,
 // Default player factory
 // ---------------------------------------------------------------------------
 
-const GAME_START_YEAR = 1200;
+const GAME_START_YEAR = 1314;
 
 function makeDefaultPlayer(
   name: string,
@@ -124,7 +191,7 @@ function makeDefaultPlayer(
   skinTone: SkinTone,
   hair: Hair,
 ): Player {
-  const startingAge = 14;
+  const startingAge = 15;
 
   const base: Player = {
     id: uuidv4(),
@@ -135,6 +202,8 @@ function makeDefaultPlayer(
     background,
     religion: 'christian',
     gold: 10,
+    health: 100,
+    maxHealth: 100,
     physicalStats: {
       strength: 0,
       agility: 0,
@@ -160,6 +229,7 @@ function makeDefaultPlayer(
       medicine: 0,
       strategy: 0,
       eloquence: 0,
+      apocryphal: 0,
     },
     craftSkills: {
       tailoring: 0,
@@ -248,7 +318,8 @@ function applyDeltaToPlayer(player: Player, delta: StatDelta): Player {
       keyof typeof ks
     >) {
       if (delta.knowledgeSkills[key] !== undefined) {
-        ks[key] = clamp(ks[key] + (delta.knowledgeSkills[key] ?? 0));
+        // `?? 0` guards legacy saves lacking the newer `apocryphal` field.
+        ks[key] = clamp((ks[key] ?? 0) + (delta.knowledgeSkills[key] ?? 0));
       }
     }
     next.knowledgeSkills = ks;
@@ -305,6 +376,8 @@ export interface ActivityRequest {
   /** Location id, used for the consecutive-visit streak (tavern/church). */
   location?: string;
   statDelta?: StatDelta;
+  /** Raises max health and heals by this amount (e.g. reading a medical text). */
+  healthDelta?: number;
   christianRelationDelta?: number;
   paganRelationDelta?: number;
   /** Find-or-create a recurring NPC (blacksmith/merchant/artisan) and nudge their score. */
@@ -327,13 +400,25 @@ export interface ActivityResult {
   note?: string;
 }
 
+export interface TimeTransition {
+  kind: 'month' | 'year';
+  fromYear: number;
+  toYear: number;
+}
+
 export interface GameState {
   player: Player | null;
   pendingEvent: GameEvent | null;
+  /** Drives the full-screen fade overlay when time advances. Null when idle. */
+  timeTransition: TimeTransition | null;
+  /** Event rolled on advance, held back until the time-transition finishes. */
+  deferredEvent: GameEvent | null;
 
   // Actions
   initNewGame: (name: string, background: Background, skinTone: SkinTone, hair: Hair) => void;
   advanceMonth: () => void;
+  /** Ends the time-transition overlay and surfaces any deferred event. */
+  endTimeTransition: () => void;
   /** Performs a village activity, honouring the monthly action limits. */
   performActivity: (req: ActivityRequest) => ActivityResult;
   /**
@@ -372,10 +457,17 @@ export const useGameStore = create<GameState>()(
     (set, get) => ({
       player: null,
       pendingEvent: null,
+      timeTransition: null,
+      deferredEvent: null,
 
       initNewGame: (name, background, skinTone, hair) => {
         const player = makeDefaultPlayer(name, background, skinTone, hair);
-        set({ player, pendingEvent: null });
+        set({ player, pendingEvent: null, timeTransition: null, deferredEvent: null });
+      },
+
+      endTimeTransition: () => {
+        const { deferredEvent } = get();
+        set({ timeTransition: null, pendingEvent: deferredEvent ?? null, deferredEvent: null });
       },
 
       advanceMonth: () => {
@@ -485,11 +577,35 @@ export const useGameStore = create<GameState>()(
           }
         }
 
-        const pendingEvent = isNewYear
+        // Knowledge-gated equipment unlocks (safety net beyond performActivity)
+        {
+          const unlock = grantSkillUnlocks(updatedPlayer);
+          if (unlock.notes.length > 0) {
+            updatedPlayer = {
+              ...unlock.player,
+              history: [
+                ...unlock.player.history,
+                ...unlock.notes.map((text) => ({ age: updatedPlayer.age, month, text })),
+              ],
+            };
+          }
+        }
+
+        const rolledEvent = isNewYear
           ? rollAnnualEvent(updatedPlayer)
           : rollMonthlyEvent(updatedPlayer);
 
-        set({ player: updatedPlayer, pendingEvent: pendingEvent ?? null });
+        // Defer the event until the fade animation finishes (see endTimeTransition).
+        set({
+          player: updatedPlayer,
+          pendingEvent: null,
+          deferredEvent: rolledEvent ?? null,
+          timeTransition: {
+            kind: isNewYear ? 'year' : 'month',
+            fromYear: player.currentYear,
+            toYear: year,
+          },
+        });
       },
 
       resolveEvent: (outcomeIndex) => {
@@ -592,11 +708,9 @@ export const useGameStore = create<GameState>()(
         const principalUsed = player.principalActionsUsed ?? 0;
         const secondaryUsed = player.secondaryActionsUsed ?? 0;
 
-        if (req.kind === 'principal' && principalUsed >= MAX_PRINCIPAL_ACTIONS) {
-          return { ok: false, reason: "Vous avez déjà accompli votre action principale ce mois-ci." };
-        }
-        if (req.kind === 'secondary' && secondaryUsed >= MAX_SECONDARY_ACTIONS) {
-          return { ok: false, reason: "Vous avez épuisé vos actions secondaires ce mois-ci." };
+        // Single fatigue gauge: each action spends energy; none left → exhausted.
+        if (energyUsed(player) + energyCost(req.kind) > ENERGY_CAPACITY) {
+          return { ok: false, reason: 'Vous êtes épuisé. Passez au mois suivant pour récupérer vos forces.' };
         }
 
         let next: Player = { ...player };
@@ -607,6 +721,30 @@ export const useGameStore = create<GameState>()(
         if (req.statDelta) {
           next = applyDeltaToPlayer(next, req.statDelta);
           lines.push(...formatStatDelta(req.statDelta));
+
+          // Dishonourable acts (honour loss) shame the family — parents' regard drops.
+          const honorDelta = req.statDelta.prestige?.honor ?? 0;
+          if (honorDelta < 0) {
+            const famPenalty = honorDelta * 2;
+            next = {
+              ...next,
+              relations: next.relations.map((r) =>
+                r.type === 'father' || r.type === 'mother'
+                  ? { ...r, score: clamp(r.score + famPenalty) }
+                  : r,
+              ),
+            };
+            lines.push({ label: 'Relations parentales', value: famPenalty });
+          }
+        }
+
+        // 1b. Health / vitality (raises max and heals to it — e.g. medical texts)
+        if (req.healthDelta) {
+          const curMax = next.maxHealth ?? 100;
+          const curHp = next.health ?? curMax;
+          const newMax = Math.max(0, Math.min(999, curMax + req.healthDelta));
+          next = { ...next, maxHealth: newMax, health: Math.min(newMax, curHp + req.healthDelta) };
+          lines.push({ label: 'Points de vie', value: req.healthDelta });
         }
 
         // 2. Faith-based relation shift (priest + Christians vs pagans)
@@ -714,6 +852,13 @@ export const useGameStore = create<GameState>()(
           }
         }
 
+        // Knowledge-gated equipment (e.g. high religion / apocryphal → a helmet)
+        {
+          const unlock = grantSkillUnlocks(next);
+          next = unlock.player;
+          noteParts.push(...unlock.notes);
+        }
+
         // 6. Consume the action slot
         if (req.kind === 'principal') {
           next = {
@@ -732,8 +877,9 @@ export const useGameStore = create<GameState>()(
       consumeActionSlot: (kind) => {
         const { player } = get();
         if (!player) return false;
+        // Gate on the shared fatigue gauge rather than per-kind caps.
+        if (energyUsed(player) + energyCost(kind) > ENERGY_CAPACITY) return false;
         if (kind === 'principal') {
-          if ((player.principalActionsUsed ?? 0) >= MAX_PRINCIPAL_ACTIONS) return false;
           set({
             player: {
               ...player,
@@ -743,7 +889,6 @@ export const useGameStore = create<GameState>()(
           });
           return true;
         }
-        if ((player.secondaryActionsUsed ?? 0) >= MAX_SECONDARY_ACTIONS) return false;
         set({
           player: {
             ...player,
@@ -933,6 +1078,15 @@ export const useGameStore = create<GameState>()(
     {
       name: 'medieval_save_v1',
       storage: createJSONStorage(() => AsyncStorage),
+      // Bump to 1: clears the inventory once on existing saves.
+      // (Items had been seeded in to preview the equipment sprites.)
+      version: 1,
+      migrate: (persistedState: any) => {
+        if (persistedState?.player) {
+          persistedState.player = { ...persistedState.player, inventory: [] };
+        }
+        return persistedState;
+      },
     },
   ),
 );

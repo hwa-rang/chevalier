@@ -11,3 +11,5 @@ build/
 *.orig.*
 web-build/
 .env
+.eas-build.log
+.expo-export-check/

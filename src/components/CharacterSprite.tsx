@@ -1,62 +1,66 @@
 import React from 'react';
-import { View } from 'react-native';
-import { SvgXml } from 'react-native-svg';
+import { View, Image } from 'react-native';
 import type { Player } from '../types/game';
 import { EMPTY_EQUIPMENT } from '../utils/equipment';
-import * as S from '../assets/sprites/svg/spriteData';
 
-// One memoised layer — parses its SVG string only when xml/size change.
-const Layer = React.memo(function Layer({ xml, size }: { xml: string; size: number }) {
-  return (
-    <SvgXml
-      xml={xml}
-      width={size}
-      height={size}
-      style={{ position: 'absolute', left: 0, top: 0 }}
-    />
-  );
-});
+// ─── Asset maps (static requires — Metro bundles each PNG) ─────────────────────
 
-type Skin = 'skin1' | 'skin2';
-
-const BODY: Record<Skin, Record<'hair1' | 'hair2', string>> = {
-  skin1: { hair1: S.bodyS1H1, hair2: S.bodyS1H2 },
-  skin2: { hair1: S.bodyS2H1, hair2: S.bodyS2H2 },
+const SKIN: Record<string, number> = {
+  tone1: require('../assets/sprites/png/skin-1.png'),
+  tone2: require('../assets/sprites/png/skin-2.png'),
+  tone3: require('../assets/sprites/png/skin-3.png'),
+  tone4: require('../assets/sprites/png/skin-4.png'),
+  tone5: require('../assets/sprites/png/skin-4.png'),
 };
 
-// ─── Equipment sprite resolvers (subtype → SVG string, null if no art) ─────────
+const HAIR: Record<string, number> = {
+  blond: require('../assets/sprites/png/hair-blond.png'),
+  brun: require('../assets/sprites/png/hair-brun.png'),
+  noir: require('../assets/sprites/png/hair-noir.png'),
+  rouge: require('../assets/sprites/png/hair-rouge.png'),
+};
 
-function helmetSprite(subtype: string): string | null {
-  switch (subtype) {
-    case 'helmet': return S.helmet1;
-    case 'helmet_visor': return S.helmet2;
-    case 'helmet_crusader': return S.helmetChristian;
-    default: return null;
-  }
-}
+const CLOTHING_BASIC = require('../assets/sprites/png/clothing-basic.png');
 
-function armorSprite(subtype: string, skin: Skin): string | null {
-  switch (subtype) {
-    case 'chainmail': return skin === 'skin1' ? S.chainmailS1 : S.chainmailS2;
-    case 'full_plate': return S.armorCuirass;
-    default: return null;
-  }
-}
+const HELMET: Record<string, number> = {
+  helmet_nasal: require('../assets/sprites/png/helmet-nasal.png'),
+  helmet_corbeau: require('../assets/sprites/png/helmet-corbeau.png'),
+  helmet_roa: require('../assets/sprites/png/helmet-roa.png'),
+  helmet_crusader: require('../assets/sprites/png/helmet-crusader.png'),
+};
 
-function shieldSprite(subtype: string): string | null {
-  switch (subtype) {
-    case 'shield': return S.shieldMedium;
-    case 'shield_large': return S.shieldLarge;
-    default: return null;
-  }
-}
+const ARMOR: Record<string, number> = {
+  chainmail: require('../assets/sprites/png/armor-maille.png'),
+  full_plate: require('../assets/sprites/png/armor-cuirass.png'),
+};
 
-function weaponSprite(subtype: string): string | null {
-  switch (subtype) {
-    case 'long_sword':
-    case 'sword_shield': return S.weaponShortsword;
-    default: return null;
-  }
+const SHIELD: Record<string, number> = {
+  shield_small: require('../assets/sprites/png/shield-small.png'),
+  shield: require('../assets/sprites/png/shield-medium.png'),
+  shield_large: require('../assets/sprites/png/shield-large.png'),
+};
+
+const WEAPON: Record<string, number> = {
+  long_sword: require('../assets/sprites/png/weapon-sword.png'),
+  sword_shield: require('../assets/sprites/png/weapon-sword.png'),
+  axe: require('../assets/sprites/png/weapon-axe.png'),
+  mace: require('../assets/sprites/png/weapon-mace.png'),
+  lance: require('../assets/sprites/png/weapon-lance.png'),
+  bardiche: require('../assets/sprites/png/weapon-bardiche.png'),
+  bow: require('../assets/sprites/png/weapon-bow.png'),
+};
+
+// ─── Layer ─────────────────────────────────────────────────────────────────────
+
+function Layer({ src, size }: { src: number; size: number }) {
+  return (
+    <Image
+      source={src}
+      style={{ position: 'absolute', left: 0, top: 0, width: size, height: size }}
+      resizeMode="contain"
+      fadeDuration={0}
+    />
+  );
 }
 
 interface Props {
@@ -66,18 +70,20 @@ interface Props {
 }
 
 export default function CharacterSprite({ player, flipped = false, size = 192 }: Props) {
-  const skin: Skin = player.skinTone === 'tone1' ? 'skin1' : 'skin2';
-  const hair = player.hair ?? 'hair1';
-  const bodyXml = BODY[skin][hair];
+  const skinSrc = SKIN[player.skinTone] ?? SKIN.tone1;
+  const hairSrc = HAIR[player.hair ?? 'brun'] ?? HAIR.brun;
 
   const eq = player.equipment ?? EMPTY_EQUIPMENT;
-  // Only show a slot if the player still owns the equipped item.
+  // A slot only shows if the player still owns the equipped item.
   const owns = (sub: string | null) => !!sub && player.inventory.some((i) => i.subtype === sub);
 
-  const armorXml  = owns(eq.armor)  ? armorSprite(eq.armor as string, skin) : null;
-  const helmetXml = owns(eq.helmet) ? helmetSprite(eq.helmet as string) : null;
-  const shieldXml = owns(eq.shield) ? shieldSprite(eq.shield as string) : null;
-  const weaponXml = owns(eq.weapon) ? weaponSprite(eq.weapon as string) : null;
+  const helmetSrc = owns(eq.helmet) ? HELMET[eq.helmet as string] ?? null : null;
+  const armorSrc  = owns(eq.armor)  ? ARMOR[eq.armor as string]  ?? null : null;
+  const shieldSrc = owns(eq.shield) ? SHIELD[eq.shield as string] ?? null : null;
+  const weaponSrc = owns(eq.weapon) ? WEAPON[eq.weapon as string] ?? null : null;
+
+  // Hair is hidden when a helmet is worn.
+  const showHair = !helmetSrc;
 
   return (
     <View
@@ -86,12 +92,14 @@ export default function CharacterSprite({ player, flipped = false, size = 192 }:
         flipped ? { transform: [{ scaleX: -1 }] } : null,
       ]}
     >
-      {/* Stacked back → front */}
-      <Layer xml={bodyXml} size={size} />
-      {armorXml && <Layer xml={armorXml} size={size} />}
-      {helmetXml && <Layer xml={helmetXml} size={size} />}
-      {shieldXml && <Layer xml={shieldXml} size={size} />}
-      {weaponXml && <Layer xml={weaponXml} size={size} />}
+      {/* Back → front: skin, hair, clothing, armor, shield, helmet, weapon */}
+      <Layer src={skinSrc} size={size} />
+      {showHair && <Layer src={hairSrc} size={size} />}
+      <Layer src={CLOTHING_BASIC} size={size} />
+      {armorSrc && <Layer src={armorSrc} size={size} />}
+      {shieldSrc && <Layer src={shieldSrc} size={size} />}
+      {helmetSrc && <Layer src={helmetSrc} size={size} />}
+      {weaponSrc && <Layer src={weaponSrc} size={size} />}
     </View>
   );
 }

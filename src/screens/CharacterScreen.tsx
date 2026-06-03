@@ -104,6 +104,10 @@ export default function CharacterScreen({ navigation }: CharacterScreenProps) {
           <StatRow label="Origine" value={BACKGROUND_LABELS[player.background] ?? player.background} />
           <StatRow label="Or" value={`${player.gold} g`} />
           <StatRow label="Partisans" value={String(player.followers)} />
+          <StatRow
+            label="Points de vie"
+            value={`${player.health ?? player.maxHealth ?? 100}/${player.maxHealth ?? 100}`}
+          />
         </View>
 
         {/* Prestige */}
@@ -176,6 +180,7 @@ export default function CharacterScreen({ navigation }: CharacterScreenProps) {
           <StatRow label="Médecine" value={String(knowledgeSkills.medicine)} />
           <StatRow label="Stratégie" value={String(knowledgeSkills.strategy)} />
           <StatRow label="Éloquence" value={String(knowledgeSkills.eloquence)} />
+          <StatRow label="Connaissances apocryphes" value={String(knowledgeSkills.apocryphal ?? 0)} />
         </View>
 
         {/* Recent history */}

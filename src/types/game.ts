@@ -1,7 +1,7 @@
 export type SkinTone = 'tone1' | 'tone2' | 'tone3' | 'tone4' | 'tone5';
 
 /** Hair colour for the character sprite. */
-export type Hair = 'hair1' | 'hair2';
+export type Hair = 'blond' | 'brun' | 'noir' | 'rouge';
 
 /** Wearable equipment slots. */
 export type EquipSlot = 'helmet' | 'armor' | 'shield' | 'weapon';
@@ -69,6 +69,8 @@ export interface KnowledgeSkills {
   medicine: number;
   strategy: number;
   eloquence: number;
+  /** Lore of forgotten/pagan gods. Raised by visiting the pagan temple. */
+  apocryphal: number;
 }
 
 export interface CraftSkills {
@@ -141,6 +143,10 @@ export interface Player {
   /** The player is Christian by default. */
   religion: Religion;
   gold: number;
+  /** Current health points (vitality). */
+  health: number;
+  /** Maximum health points — raised by reading medical texts. */
+  maxHealth: number;
   physicalStats: PhysicalStats;
   combatSkills: CombatSkills;
   ridingSkills: RidingSkills;

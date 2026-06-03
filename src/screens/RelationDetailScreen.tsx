@@ -12,9 +12,11 @@ import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
 import {
   useGameStore,
-  MAX_PRINCIPAL_ACTIONS,
-  MAX_SECONDARY_ACTIONS,
+  energyUsed,
+  energyCost,
+  ENERGY_CAPACITY,
 } from '../store/gameStore';
+import FatigueGauge from '../components/FatigueGauge';
 import { canRomance } from '../utils/romanceRules';
 import type { Relation, RelationType, StatDelta } from '../types/game';
 
@@ -130,10 +132,10 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
 
   if (!player) return null;
 
-  const principalLeft = (player.principalActionsUsed ?? 0) < MAX_PRINCIPAL_ACTIONS;
-  const secondaryLeft = (player.secondaryActionsUsed ?? 0) < MAX_SECONDARY_ACTIONS;
-  const SKILL_SLOT_MSG = 'Action principale déjà utilisée ce mois-ci';
-  const SOCIAL_SLOT_MSG = 'Actions secondaires épuisées ce mois-ci';
+  const principalLeft = energyUsed(player) + energyCost('principal') <= ENERGY_CAPACITY;
+  const secondaryLeft = energyUsed(player) + energyCost('secondary') <= ENERGY_CAPACITY;
+  const SKILL_SLOT_MSG = 'Vous êtes épuisé — passez au mois suivant pour récupérer';
+  const SOCIAL_SLOT_MSG = 'Vous êtes épuisé — passez au mois suivant pour récupérer';
 
   /** Consumes a monthly action slot; shows feedback and returns false if exhausted. */
   const tryUseSlot = (kind: 'principal' | 'secondary'): boolean => {
@@ -403,10 +405,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
 
         {/* Monthly action budget */}
         <View style={styles.slotInfo}>
-          <Text style={styles.slotInfoText}>
-            ⚔ Principale {player.principalActionsUsed ?? 0}/{MAX_PRINCIPAL_ACTIONS}
-            {'    '}✦ Secondaires {player.secondaryActionsUsed ?? 0}/{MAX_SECONDARY_ACTIONS}
-          </Text>
+          <FatigueGauge used={energyUsed(player)} />
         </View>
 
         {/* Feedback banner */}

@@ -2,6 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './types';
+import { navigationRef } from './navigationRef';
 import MainMenuScreen from '../screens/MainMenuScreen';
 import CharacterCreationScreen from '../screens/CharacterCreationScreen';
 import IntroScreen from '../screens/IntroScreen';
@@ -20,7 +21,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
         <Stack.Screen name="MainMenu" component={MainMenuScreen} />
         <Stack.Screen name="CharacterCreation" component={CharacterCreationScreen} />

@@ -12,13 +12,15 @@ import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
 import {
   useGameStore,
-  MAX_PRINCIPAL_ACTIONS,
-  MAX_SECONDARY_ACTIONS,
+  energyUsed,
+  energyCost,
+  ENERGY_CAPACITY,
   type ActivityRequest,
 } from '../store/gameStore';
 import PixelMap from '../components/PixelMap';
 import BottomSheet from '../components/BottomSheet';
 import ActivityResultModal from '../components/ActivityResultModal';
+import FatigueGauge from '../components/FatigueGauge';
 import { VILLAGE_MAP, VILLAGE_POIS } from '../data/villagemap';
 import type { PointOfInterest } from '../components/PixelMap';
 import type { Player, StatDelta } from '../types/game';
@@ -30,6 +32,50 @@ type Props = NativeStackScreenProps<RootStackParamList, 'VillageMap'>;
 // Runtime-only RNG (never inside a workflow script).
 const rint = (min: number, max: number): number =>
   Math.floor(Math.random() * (max - min + 1)) + min;
+
+/** Does the player own the craftsman's manual? (+gold at forge/craftsman). */
+const hasCraftManual = (p: Player): boolean =>
+  p.inventory.some((i) => i.subtype === 'book_craft');
+
+// ─── Book reading ─────────────────────────────────────────────────────────────
+// Every book grants reading (literature); most also train a specialty.
+// Add new books here later — owning the book makes "Lire : …" appear at home.
+const BOOK_EFFECTS: Record<
+  string,
+  { label: string; desc: string; statDelta?: StatDelta; healthDelta?: number }
+> = {
+  book_general:  { label: 'Traité de culture',  desc: 'Vous enrichissez votre culture générale.',  statDelta: { knowledgeSkills: { literature: 1, generalCulture: 2 } } },
+  book_religion: { label: 'Livre saint',         desc: 'Vous méditez les Écritures sacrées.',       statDelta: { knowledgeSkills: { literature: 1, religion: 2 } } },
+  book_strategy: { label: 'Traité de stratégie', desc: "Vous étudiez l'art de la guerre.",           statDelta: { knowledgeSkills: { literature: 1, strategy: 2 } } },
+  book_medicine: { label: 'Traité de médecine',  desc: 'Vous apprenez à préserver votre corps.',     statDelta: { knowledgeSkills: { literature: 1 } }, healthDelta: 2 },
+  book_craft:    { label: 'Manuel artisanal',    desc: 'Vous révisez les techniques de métier.',     statDelta: { knowledgeSkills: { literature: 1 } } },
+  book_fencing:  { label: "Manuel d'escrime",    desc: "Vous perfectionnez le maniement de l'épée.", statDelta: { knowledgeSkills: { literature: 1 }, combatSkills: { longSword: 2 } } },
+  book_hunting:  { label: 'Guide de chasse',     desc: 'Vous affûtez votre adresse au tir.',         statDelta: { knowledgeSkills: { literature: 1 }, combatSkills: { archery: 2 } } },
+  book_milon:    { label: 'Manuscrit de Milon de Crotone', desc: 'Vous suivez ses exercices de force.', statDelta: { knowledgeSkills: { literature: 1 }, physicalStats: { strength: 2 } } },
+};
+
+/** One "Lire : …" secondary activity per distinct book the player owns. */
+function readActivitiesFor(player: Player): Activity[] {
+  const seen = new Set<string>();
+  const acts: Activity[] = [];
+  for (const item of player.inventory) {
+    if (item.category !== 'book' || seen.has(item.subtype)) continue;
+    seen.add(item.subtype);
+    const fx = BOOK_EFFECTS[item.subtype] ?? {
+      label: item.name,
+      desc: 'Vous lisez attentivement.',
+      statDelta: { knowledgeSkills: { literature: 1 } },
+    };
+    acts.push({
+      id: `read_${item.subtype}`,
+      label: `Lire : ${fx.label}`,
+      desc: fx.desc,
+      kind: 'secondary',
+      req: () => ({ location: 'home', statDelta: fx.statDelta, healthDelta: fx.healthDelta }),
+    });
+  }
+  return acts;
+}
 
 // ─── Activity definitions per location ───────────────────────────────────────
 
@@ -135,7 +181,7 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
     {
       id: 'workForge', label: 'Travailler à la forge', desc: 'Souffler, forger, tremper. On y côtoie le forgeron.',
       kind: 'principal',
-      req: () => ({ location: 'forge', statDelta: { gold: rint(1, 3), craftSkills: { blacksmithing: 2 }, physicalStats: { strength: 1 } }, ensureNpc: { role: 'blacksmith', profession: 'le forgeron' }, npcScoreDelta: 1 }),
+      req: (p) => ({ location: 'forge', statDelta: { gold: rint(1, 3) + (hasCraftManual(p) ? 2 : 0), craftSkills: { blacksmithing: 2 }, physicalStats: { strength: 1 } }, ensureNpc: { role: 'blacksmith', profession: 'le forgeron' }, npcScoreDelta: 1 }),
     },
     {
       id: 'trainHeavy', label: "S'entraîner (arme lourde)", desc: "Manier le marteau du forgeron. Il n'apprécie guère qu'on use son outil.",
@@ -173,13 +219,7 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
       kind: 'principal',
       req: () => ({ location: 'home', statDelta: { knowledgeSkills: { literature: 2 } } }),
     },
-    {
-      id: 'readBook', label: 'Lire un livre', desc: "Consulter un ouvrage de votre bibliothèque.",
-      kind: 'secondary',
-      cond: (p) => !p.inventory.some((i) => i.category === 'book'),
-      condMsg: "Vous n'avez aucun livre.",
-      req: () => ({ location: 'home', statDelta: { knowledgeSkills: { literature: 1, generalCulture: 1 } } }),
-    },
+    // Reading is added dynamically per owned book — see readActivitiesFor().
     {
       id: 'carePet', label: 'Soigner votre animal', desc: 'Nourrir, brosser et jouer avec votre compagnon.',
       kind: 'secondary',
@@ -274,29 +314,29 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
     {
       id: 'workTailoring', label: 'Travailler chez le tailleur', desc: "Coudre, couper, assembler. On y connaît l'artisan.",
       kind: 'principal',
-      req: () => ({ location: 'craftsman', statDelta: { gold: rint(1, 3), craftSkills: { tailoring: 2 }, physicalStats: { agility: 1 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1 }),
+      req: (p) => ({ location: 'craftsman', statDelta: { gold: rint(1, 3) + (hasCraftManual(p) ? 2 : 0), craftSkills: { tailoring: 2 }, physicalStats: { agility: 1 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1 }),
     },
     {
       id: 'workBowyer', label: "Travailler chez l'archer-armurier", desc: "Façonner arcs et flèches aux côtés de l'artisan.",
       kind: 'principal',
-      req: () => ({ location: 'craftsman', statDelta: { gold: rint(1, 3), craftSkills: { bowyer: 2 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1 }),
+      req: (p) => ({ location: 'craftsman', statDelta: { gold: rint(1, 3) + (hasCraftManual(p) ? 2 : 0), craftSkills: { bowyer: 2 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1 }),
     },
   ],
   temple: [
     {
       id: 'visitTemple', label: 'Assister au rite ancien', desc: "Une cérémonie païenne, loin du regard de l'Église.",
       kind: 'secondary',
-      req: () => ({ location: 'temple', christianRelationDelta: -3, paganRelationDelta: 4 }),
+      req: () => ({ location: 'temple', statDelta: { knowledgeSkills: { apocryphal: 2 } }, christianRelationDelta: -3, paganRelationDelta: 4 }),
     },
     {
       id: 'prayTemple', label: 'Honorer les anciens dieux', desc: 'Déposer une offrande aux divinités oubliées.',
       kind: 'secondary',
-      req: () => ({ location: 'temple', christianRelationDelta: -2, paganRelationDelta: 3 }),
+      req: () => ({ location: 'temple', statDelta: { knowledgeSkills: { apocryphal: 1 } }, christianRelationDelta: -2, paganRelationDelta: 3 }),
     },
     {
       id: 'workTemple', label: 'Servir le sanctuaire', desc: 'Aider les fidèles païens et entretenir le lieu.',
       kind: 'secondary',
-      req: () => ({ location: 'temple', statDelta: { gold: rint(1, 2) }, christianRelationDelta: -4, paganRelationDelta: 5 }),
+      req: () => ({ location: 'temple', statDelta: { gold: rint(1, 2), knowledgeSkills: { apocryphal: 2 } }, christianRelationDelta: -4, paganRelationDelta: 5 }),
     },
   ],
 };
@@ -320,8 +360,7 @@ export default function VillageMapScreen({ navigation }: Props) {
 
   if (!player) return null;
 
-  const principalUsed = player.principalActionsUsed ?? 0;
-  const secondaryUsed = player.secondaryActionsUsed ?? 0;
+  const used = energyUsed(player);
 
   // Map fills the available width (48×48 grid).
   const tileSize = Math.max(7, Math.floor((width - 16) / 48));
@@ -331,7 +370,10 @@ export default function VillageMapScreen({ navigation }: Props) {
   const closeSheet = () => setSelectedPoi(null);
 
   const locId = selectedPoi?.id as LocationId | undefined;
-  const activities = locId ? (LOCATION_ACTIVITIES[locId] ?? []) : [];
+  let activities = locId ? (LOCATION_ACTIVITIES[locId] ?? []) : [];
+  if (locId === 'home') {
+    activities = [...activities, ...readActivitiesFor(player)];
+  }
   const flavor = locId ? LOCATION_FLAVOR[locId] : '';
   const access: ZoneAccess = locId ? getZoneAccess(player, locId) : { forbidden: false };
 
@@ -344,11 +386,8 @@ export default function VillageMapScreen({ navigation }: Props) {
   /** Returns lock state + message for an activity given the current player. */
   const lockState = (act: Activity): { locked: boolean; msg: string } => {
     if (act.cond?.(player)) return { locked: true, msg: act.condMsg ?? 'Indisponible.' };
-    if (act.kind === 'principal' && principalUsed >= MAX_PRINCIPAL_ACTIONS) {
-      return { locked: true, msg: 'Action principale déjà utilisée ce mois-ci.' };
-    }
-    if (act.kind === 'secondary' && secondaryUsed >= MAX_SECONDARY_ACTIONS) {
-      return { locked: true, msg: 'Actions secondaires épuisées ce mois-ci.' };
+    if (act.kind !== 'free' && used + energyCost(act.kind) > ENERGY_CAPACITY) {
+      return { locked: true, msg: 'Vous êtes épuisé. Passez au mois suivant pour récupérer.' };
     }
     return { locked: false, msg: '' };
   };
@@ -386,31 +425,9 @@ export default function VillageMapScreen({ navigation }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Action economy bar */}
+      {/* Fatigue gauge (replaces the principal/secondary counters) */}
       <View style={styles.actionBar}>
-        <View style={styles.actionCounter}>
-          <Text style={styles.actionCounterLabel}>⚔ Action principale</Text>
-          <Text
-            style={[
-              styles.actionCounterValue,
-              principalUsed >= MAX_PRINCIPAL_ACTIONS && styles.actionCounterFull,
-            ]}
-          >
-            {principalUsed}/{MAX_PRINCIPAL_ACTIONS}
-          </Text>
-        </View>
-        <View style={styles.actionDivider} />
-        <View style={styles.actionCounter}>
-          <Text style={styles.actionCounterLabel}>✦ Secondaires</Text>
-          <Text
-            style={[
-              styles.actionCounterValue,
-              secondaryUsed >= MAX_SECONDARY_ACTIONS && styles.actionCounterFull,
-            ]}
-          >
-            {secondaryUsed}/{MAX_SECONDARY_ACTIONS}
-          </Text>
-        </View>
+        <FatigueGauge used={used} />
       </View>
 
       {/* Map — fills available space */}
@@ -429,10 +446,7 @@ export default function VillageMapScreen({ navigation }: Props) {
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.advanceBtn}
-          onPress={() => {
-            advanceMonth();
-            navigation.navigate('Character');
-          }}
+          onPress={() => advanceMonth()}
           activeOpacity={0.85}
         >
           <Text style={styles.advanceText}>Passer au mois suivant →</Text>
@@ -542,13 +556,10 @@ const styles = StyleSheet.create({
 
   // Action economy bar
   actionBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: Colors.surfaceDark,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   actionCounter: {
     flexDirection: 'row',

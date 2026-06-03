@@ -55,15 +55,6 @@ export const SHOP_ITEMS: ShopItem[] = [
     requirements: { minAge: 16, minReputation: 20, minHonor: 10 },
   },
   {
-    catalogId: 'sword_shield',
-    name: 'Épée & Bouclier',
-    category: 'weapon',
-    subtype: 'sword_shield',
-    price: 90,
-    description: 'Combinaison défensive et offensive classique.',
-    requirements: { minAge: 16, minReputation: 20, minHonor: 10 },
-  },
-  {
     catalogId: 'mace',
     name: "Masse d'armes",
     category: 'weapon',
@@ -81,15 +72,24 @@ export const SHOP_ITEMS: ShopItem[] = [
     description: "Arme de tir à distance, nécessite entraînement.",
     requirements: { minAge: 16, minReputation: 20, minHonor: 10 },
   },
+  {
+    catalogId: 'bardiche',
+    name: 'Bardiche',
+    category: 'weapon',
+    subtype: 'bardiche',
+    price: 80,
+    description: "Longue hache d'hast à deux mains.",
+    requirements: { minAge: 16, minReputation: 20, minHonor: 10 },
+  },
 
   // ARMOR — no restrictions
   {
-    catalogId: 'helmet',
-    name: 'Heaume',
+    catalogId: 'helmet_nasal',
+    name: 'Bascinet nasal',
     category: 'armor',
-    subtype: 'helmet',
+    subtype: 'helmet_nasal',
     price: 25,
-    description: 'Protection de tête en métal forgé.',
+    description: 'Casque léger avec protège-nez.',
   },
   {
     catalogId: 'gauntlets',
@@ -124,6 +124,14 @@ export const SHOP_ITEMS: ShopItem[] = [
     description: 'Légère et flexible, bon compromis.',
   },
   {
+    catalogId: 'shield_small',
+    name: 'Petit bouclier',
+    category: 'armor',
+    subtype: 'shield_small',
+    price: 18,
+    description: 'Léger et maniable, protection modeste.',
+  },
+  {
     catalogId: 'shield',
     name: 'Bouclier moyen',
     category: 'armor',
@@ -140,21 +148,23 @@ export const SHOP_ITEMS: ShopItem[] = [
     description: 'Large protection, plus lourd à porter.',
   },
   {
-    catalogId: 'helmet_visor',
-    name: 'Casque à visière',
+    catalogId: 'helmet_corbeau',
+    name: 'Bascinet à bec de corbeau',
     category: 'armor',
-    subtype: 'helmet_visor',
-    price: 45,
-    description: 'Heaume fermé protégeant tout le visage.',
+    subtype: 'helmet_corbeau',
+    price: 50,
+    description: 'Heaume à visière pointue au profil agressif.',
   },
   {
-    catalogId: 'helmet_crusader',
-    name: 'Heaume de croisé',
+    catalogId: 'helmet_roa',
+    name: 'Bascinet royal',
     category: 'armor',
-    subtype: 'helmet_crusader',
-    price: 60,
-    description: 'Casque imposant des chevaliers de la croix.',
+    subtype: 'helmet_roa',
+    price: 70,
+    description: "Casque ouvragé digne d'un seigneur.",
   },
+  // NB: "Bascinet avec visière à croix" (helmet_crusader) n'est PAS vendu au marché —
+  // il se gagne lorsque le savoir « religion » devient très élevé (voir gameStore).
 
   // BOOKS — no restrictions to buy
   {
@@ -195,7 +205,31 @@ export const SHOP_ITEMS: ShopItem[] = [
     category: 'book',
     subtype: 'book_craft',
     price: 12,
-    description: "Techniques de fabrication et d'artisanat.",
+    description: "Techniques de métier : +2 g à la forge et chez l'artisan.",
+  },
+  {
+    catalogId: 'book_fencing',
+    name: "Manuel d'escrime",
+    category: 'book',
+    subtype: 'book_fencing',
+    price: 35,
+    description: "Traité du maniement de l'épée longue.",
+  },
+  {
+    catalogId: 'book_hunting',
+    name: 'Guide de chasse',
+    category: 'book',
+    subtype: 'book_hunting',
+    price: 30,
+    description: "L'art du tir à l'arc et de la traque.",
+  },
+  {
+    catalogId: 'book_milon',
+    name: 'Manuscrit de Milon de Crotone',
+    category: 'book',
+    subtype: 'book_milon',
+    price: 35,
+    description: 'Exercices légendaires pour bâtir la force.',
   },
 
   // GAMES — no restriction

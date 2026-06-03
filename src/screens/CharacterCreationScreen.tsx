@@ -19,13 +19,17 @@ import { Colors } from '../theme/colors';
 // ---------------------------------------------------------------------------
 
 const SKIN_TONES: { id: SkinTone; color: string }[] = [
-  { id: 'tone1', color: '#E8C4A0' }, // peau claire → skin1
-  { id: 'tone2', color: '#5A3A28' }, // peau foncée → skin2
+  { id: 'tone1', color: '#F0CBA8' }, // claire → skin-1
+  { id: 'tone2', color: '#C68642' }, // mate → skin-2
+  { id: 'tone3', color: '#8D5524' }, // brune → skin-3
+  { id: 'tone4', color: '#4A2F1B' }, // foncée → skin-4
 ];
 
 const HAIR_COLORS: { id: Hair; color: string }[] = [
-  { id: 'hair1', color: '#4A2E18' }, // brun
-  { id: 'hair2', color: '#C9A24B' }, // blond
+  { id: 'brun', color: '#5A3A1E' },
+  { id: 'blond', color: '#D9B45A' },
+  { id: 'noir', color: '#1E1A17' },
+  { id: 'rouge', color: '#9B3B1B' },
 ];
 
 const BACKGROUNDS: {
@@ -244,7 +248,7 @@ export default function CharacterCreationScreen({
   const [step, setStep] = useState<Step>(1);
   const [name, setName] = useState('');
   const [skinTone, setSkinTone] = useState<SkinTone>('tone1');
-  const [hair, setHair] = useState<Hair>('hair1');
+  const [hair, setHair] = useState<Hair>('brun');
   const [background, setBackground] = useState<Background>('noble');
 
   const initNewGame = useGameStore((state) => state.initNewGame);

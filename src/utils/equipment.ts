@@ -6,18 +6,28 @@ import type { EquipSlot, Equipment } from '../types/game';
  */
 export const SLOT_BY_SUBTYPE: Record<string, EquipSlot> = {
   // Helmets
-  helmet: 'helmet',
-  helmet_visor: 'helmet',
+  helmet_nasal: 'helmet',
+  helmet_corbeau: 'helmet',
+  helmet_roa: 'helmet',
   helmet_crusader: 'helmet',
+  // Earned via very high "religion" / "apocryphal" knowledge (not sold).
+  // helmet_apocryphal has no sprite yet — it equips but renders no helmet art.
+  helmet_apocryphal: 'helmet',
   // Armor
   full_plate: 'armor',
   chainmail: 'armor',
   // Shields
+  shield_small: 'shield',
   shield: 'shield',
   shield_large: 'shield',
   // Weapons
   long_sword: 'weapon',
   sword_shield: 'weapon',
+  axe: 'weapon',
+  mace: 'weapon',
+  lance: 'weapon',
+  bardiche: 'weapon',
+  bow: 'weapon',
 };
 
 export function slotForSubtype(subtype: string): EquipSlot | null {

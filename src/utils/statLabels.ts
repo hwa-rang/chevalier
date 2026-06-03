@@ -26,6 +26,7 @@ const LABELS: Record<string, string> = {
   'knowledgeSkills.medicine': 'Médecine',
   'knowledgeSkills.strategy': 'Stratégie',
   'knowledgeSkills.eloquence': 'Éloquence',
+  'knowledgeSkills.apocryphal': 'Connaissances apocryphes',
 
   'craftSkills.tailoring': 'Couture',
   'craftSkills.blacksmithing': 'Forge',

@@ -368,13 +368,14 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   tabsRow: {
-    maxHeight: 48,
+    flexGrow: 0,
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   tabsContainer: {
     paddingHorizontal: 12,
+    paddingVertical: 6,
     gap: 8,
     alignItems: 'center',
   },
@@ -389,6 +390,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontFamily: 'serif',
     fontSize: 13,
+    lineHeight: 18,
     color: Colors.textSecondary,
   },
   tabTextActive: {

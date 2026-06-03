@@ -26,7 +26,7 @@ export default function MainMenuScreen({ navigation }: MainMenuScreenProps) {
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
         <View style={styles.titleSection}>
-          <Text style={styles.era}>Anno Domini · XII Siècle</Text>
+          <Text style={styles.era}>Anno Domini · XIV Siècle</Text>
           <Text style={styles.title}>Chevalier</Text>
           <View style={styles.divider} />
           <Text style={styles.tagline}>Une vie de gloire, d'honneur et de sang</Text>

@@ -9,11 +9,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
-import {
-  useGameStore,
-  MAX_PRINCIPAL_ACTIONS,
-  MAX_SECONDARY_ACTIONS,
-} from '../store/gameStore';
+import { useGameStore, energyUsed } from '../store/gameStore';
+import FatigueGauge from '../components/FatigueGauge';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Game'>;
 
@@ -27,6 +24,10 @@ export default function GameScreen({ navigation }: Props) {
   const advanceMonth = useGameStore((s) => s.advanceMonth);
 
   if (!player) return null;
+
+  // The global TimeTransition overlay handles the fade + navigating to the
+  // character sheet (and surfaces any deferred event afterwards).
+  const handleAdvance = () => advanceMonth();
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -111,18 +112,12 @@ export default function GameScreen({ navigation }: Props) {
         <View style={styles.spacer} />
 
         <View style={styles.actionSummary}>
-          <Text style={styles.actionSummaryText}>
-            ⚔ Principale {player.principalActionsUsed ?? 0}/{MAX_PRINCIPAL_ACTIONS}
-            {'    '}✦ Secondaires {player.secondaryActionsUsed ?? 0}/{MAX_SECONDARY_ACTIONS}
-          </Text>
+          <FatigueGauge used={energyUsed(player)} />
         </View>
 
         <TouchableOpacity
           style={styles.advanceButton}
-          onPress={() => {
-            advanceMonth();
-            navigation.navigate('Character');
-          }}
+          onPress={handleAdvance}
         >
           <Text style={styles.advanceText}>Passer au mois suivant →</Text>
         </TouchableOpacity>
@@ -200,7 +195,7 @@ const styles = StyleSheet.create({
     height: 24,
   },
   actionSummary: {
-    alignItems: 'center',
+    alignItems: 'stretch',
     marginBottom: 8,
   },
   actionSummaryText: {

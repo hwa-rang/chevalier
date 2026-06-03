@@ -57,7 +57,8 @@ export function generateFamily(playerAge: number): Relation[] {
     name: pickRandom(MALE_NAMES),
     age: fatherCurrentAge,
     type: 'father',
-    score: randomInt(20, 60),
+    // Parents start very close (~90%) — drops with dishonourable acts.
+    score: randomInt(86, 94),
     religion: 'christian',
   });
 
@@ -70,7 +71,8 @@ export function generateFamily(playerAge: number): Relation[] {
     name: pickRandom(FEMALE_NAMES),
     age: motherCurrentAge,
     type: 'mother',
-    score: randomInt(30, 70),
+    // Parents start very close (~90%) — drops with dishonourable acts.
+    score: randomInt(86, 94),
     religion: 'christian',
   });
 
