@@ -1,105 +1,34 @@
-import type { MapTile, PointOfInterest } from '../components/PixelMap';
-
-// ─── Terrain generation ───────────────────────────────────────────────────────
-
-const ROWS = 48;
-const COLS = 48;
-
-function generateVillageMap(): MapTile[][] {
-  const grid: MapTile[][] = Array.from({ length: ROWS }, () =>
-    Array(COLS).fill('grass' as MapTile),
-  );
-
-  const set = (r: number, c: number, tile: MapTile) => {
-    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) grid[r][c] = tile;
-  };
-
-  // ── Forest: top-left corner ─────────────────────────────────────────────────
-  for (let r = 0; r < 13; r++) {
-    for (let c = 0; c < 13; c++) {
-      set(r, c, 'forest');
-    }
-  }
-
-  // ── Forest: bottom-right corner ─────────────────────────────────────────────
-  for (let r = 35; r < ROWS; r++) {
-    for (let c = 35; c < COLS; c++) {
-      set(r, c, 'forest');
-    }
-  }
-
-  // ── Fields: bottom-left quadrant (alternating 6×6 grass/dirt checkerboard) ──
-  // rows 27–47, cols 0–13 (below road, left of vertical road)
-  for (let r = 27; r < ROWS; r++) {
-    for (let c = 0; c < 14; c++) {
-      const blockR = Math.floor((r - 27) / 6);
-      const blockC = Math.floor(c / 6);
-      set(r, c, (blockR + blockC) % 2 === 0 ? 'grass' : 'dirt');
-    }
-  }
-
-  // ── Horizontal dirt road: rows 22–25 ────────────────────────────────────────
-  for (let r = 22; r <= 25; r++) {
-    for (let c = 0; c < COLS; c++) {
-      set(r, c, 'dirt');
-    }
-  }
-
-  // ── Vertical dirt road: cols 14–17 ──────────────────────────────────────────
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 14; c <= 17; c++) {
-      set(r, c, 'dirt');
-    }
-  }
-
-  // ── Stone crossroads: intersection ──────────────────────────────────────────
-  for (let r = 22; r <= 25; r++) {
-    for (let c = 14; c <= 17; c++) {
-      set(r, c, 'stone');
-    }
-  }
-
-  // ── River: diagonal, top-right quadrant, 2–3 tiles wide ─────────────────────
-  // Starts at (row 1, col 44) and flows diagonally down-left
-  for (let i = 0; i < 20; i++) {
-    const r = 1 + i;
-    const c = 44 - Math.floor(i * 0.35);
-    set(r, c,     'water');
-    set(r, c - 1, 'water');
-    if (i % 3 === 0) set(r, c + 1, 'water'); // occasional 3rd-tile width
-  }
-
-  return grid;
-}
-
-export const VILLAGE_MAP: MapTile[][] = generateVillageMap();
+import type { PointOfInterest } from '../components/PixelMap';
 
 // ─── Points of interest ───────────────────────────────────────────────────────
+// x / y are pixel coordinates in the ORIGINAL 432×768 SVG/PNG space.
+// They scale proportionally with the display width at runtime (see ImageMap).
+// Adjust values here if a marker doesn't land on the right building.
 
 export const VILLAGE_POIS: PointOfInterest[] = [
-  // Crossroads area
-  { id: 'market',     label: 'Marché',   x: 15, y: 23, icon: '🏪', color: '#E9A200' },
-  { id: 'bailiff',    label: 'Bailli',   x: 19, y: 20, icon: '📜', color: '#9B59B6' },
+  // ── Top-left forest ─────────────────────────────────────────────────────────
+  { id: 'temple',     label: 'Temple',   x:  60, y:  72, icon: '🗿', color: '#7E6A52' },
+  { id: 'forest',     label: 'Forêt',    x:  38, y: 320, icon: '🌲', color: '#2D6A4F' },
 
-  // Along vertical road (north → south)
-  { id: 'guardhouse', label: 'Garde',    x: 15, y:  6, icon: '⚔',  color: '#708090' },
-  { id: 'church',     label: 'Église',   x: 15, y: 12, icon: '⛪', color: '#F0F0F0' },
-  { id: 'tavern',     label: 'Taverne',  x: 15, y: 30, icon: '🍺', color: '#C4622D' },
+  // ── River (winding, left side) ───────────────────────────────────────────────
+  { id: 'river',      label: 'Rivière',  x:  98, y: 268, icon: '🐟', color: '#4A90D9' },
 
-  // East of crossroads (along horizontal road)
-  { id: 'forge',      label: 'Forge',    x: 24, y: 23, icon: '⚒',  color: '#E05C2A' },
-  { id: 'craftsman',  label: 'Artisan',  x: 29, y: 27, icon: '🧵', color: '#E9C46A' },
+  // ── Top-right wheat fields ───────────────────────────────────────────────────
+  { id: 'fields',     label: 'Champs',   x: 375, y:  55, icon: '🌾', color: '#6AB04C' },
 
-  // West of crossroads
-  { id: 'home',       label: 'Maison',   x:  7, y: 23, icon: '🏠', color: '#A0785A' },
+  // ── Upper village: church & guardhouse ──────────────────────────────────────
+  { id: 'church',     label: 'Église',   x: 228, y: 170, icon: '⛪', color: '#F0F0F0' },
+  { id: 'guardhouse', label: 'Garde',    x: 272, y: 183, icon: '⚔',  color: '#708090' },
 
-  // Top-left forest
-  { id: 'forest',     label: 'Forêt',    x:  5, y:  5, icon: '🌲', color: '#2D6A4F' },
+  // ── Central village: market, home, bailiff ──────────────────────────────────
+  { id: 'market',     label: 'Marché',   x: 198, y: 238, icon: '🏪', color: '#E9A200' },
+  { id: 'home',       label: 'Maison',   x: 148, y: 225, icon: '🏠', color: '#A0785A' },
+  { id: 'bailiff',    label: 'Bailli',   x: 278, y: 220, icon: '📜', color: '#9B59B6' },
 
-  // Top-right quadrant
-  { id: 'temple',     label: 'Temple',   x: 32, y:  8, icon: '🗿', color: '#7E6A52' },
-  { id: 'river',      label: 'Rivière',  x: 40, y:  8, icon: '🐟', color: '#4A90D9' },
+  // ── Lower village ───────────────────────────────────────────────────────────
+  { id: 'tavern',     label: 'Taverne',  x: 162, y: 292, icon: '🍺', color: '#C4622D' },
 
-  // Bottom-left fields
-  { id: 'fields',     label: 'Champs',   x:  6, y: 38, icon: '🌾', color: '#6AB04C' },
+  // ── South workshops ─────────────────────────────────────────────────────────
+  { id: 'forge',      label: 'Forge',    x: 155, y: 418, icon: '⚒',  color: '#E05C2A' },
+  { id: 'craftsman',  label: 'Artisan',  x: 258, y: 468, icon: '🧵', color: '#E9C46A' },
 ];

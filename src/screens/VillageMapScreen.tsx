@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -17,11 +16,11 @@ import {
   ENERGY_CAPACITY,
   type ActivityRequest,
 } from '../store/gameStore';
-import PixelMap from '../components/PixelMap';
+import ImageMap from '../components/ImageMap';
 import BottomSheet from '../components/BottomSheet';
 import ActivityResultModal from '../components/ActivityResultModal';
 import FatigueGauge from '../components/FatigueGauge';
-import { VILLAGE_MAP, VILLAGE_POIS } from '../data/villagemap';
+import { VILLAGE_POIS } from '../data/villagemap';
 import type { PointOfInterest } from '../components/PixelMap';
 import type { Player, StatDelta } from '../types/game';
 import type { ChangeLine } from '../utils/statLabels';
@@ -354,17 +353,12 @@ export default function VillageMapScreen({ navigation }: Props) {
   const advanceMonth = useGameStore((s) => s.advanceMonth);
   const performActivity = useGameStore((s) => s.performActivity);
 
-  const { width } = useWindowDimensions();
   const [selectedPoi, setSelectedPoi] = useState<PointOfInterest | null>(null);
   const [result, setResult] = useState<{ title: string; lines: ChangeLine[]; note?: string } | null>(null);
 
   if (!player) return null;
 
   const used = energyUsed(player);
-
-  // Map fills the available width (48×48 grid).
-  const tileSize = Math.max(7, Math.floor((width - 16) / 48));
-  const mapPx = tileSize * 48;
 
   const handlePoiPress = (poi: PointOfInterest) => setSelectedPoi(poi);
   const closeSheet = () => setSelectedPoi(null);
@@ -432,14 +426,7 @@ export default function VillageMapScreen({ navigation }: Props) {
 
       {/* Map — fills available space */}
       <View style={styles.mapWrap}>
-        <PixelMap
-          mapData={VILLAGE_MAP}
-          pois={pois}
-          onPoiPress={handlePoiPress}
-          width={mapPx}
-          height={mapPx}
-          tileSize={tileSize}
-        />
+        <ImageMap pois={pois} onPoiPress={handlePoiPress} />
       </View>
 
       {/* Advance month */}
