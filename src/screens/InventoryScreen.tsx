@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,9 @@ import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
 import { useGameStore } from '../store/gameStore';
 import { slotForSubtype, EMPTY_EQUIPMENT } from '../utils/equipment';
+import { bookEffectFor } from '../data/bookEffects';
+import ActivityResultModal from '../components/ActivityResultModal';
+import type { ChangeLine } from '../utils/statLabels';
 import type { Item, ItemCategory } from '../types/game';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Inventory'>;
@@ -70,8 +73,29 @@ export default function InventoryScreen({ navigation }: Props) {
   const player = useGameStore((s) => s.player);
   const equipItem = useGameStore((s) => s.equipItem);
   const unequipSlot = useGameStore((s) => s.unequipSlot);
+  const performActivity = useGameStore((s) => s.performActivity);
+
+  const [result, setResult] = useState<{ title: string; lines: ChangeLine[]; note?: string } | null>(
+    null,
+  );
 
   if (!player) return null;
+
+  const handleRead = (g: GroupedItem) => {
+    const fx = bookEffectFor(g.subtype, g.name);
+    const res = performActivity({
+      kind: 'principal',
+      location: 'home',
+      statDelta: fx.statDelta,
+      healthDelta: fx.healthDelta,
+      markBookRead: g.subtype,
+    });
+    setResult({
+      title: `Lire : ${fx.label}`,
+      lines: res.ok ? res.lines ?? [] : [],
+      note: res.ok ? res.note : res.reason,
+    });
+  };
 
   const equipment = player.equipment ?? EMPTY_EQUIPMENT;
   const sections = groupItems(player.inventory);
@@ -103,9 +127,11 @@ export default function InventoryScreen({ navigation }: Props) {
               <Text style={styles.sectionTitle}>{section.title}</Text>
             </View>
           )}
-          renderItem={({ item }) => {
+          renderItem={({ item, section }) => {
             const slot = slotForSubtype(item.subtype);
             const equipped = slot ? equipment[slot] === item.subtype : false;
+            const isBook = section.category === 'book';
+            const alreadyRead = isBook && (player.readBooks ?? []).includes(item.subtype);
             return (
               <View style={styles.itemRow}>
                 <Text style={styles.itemName}>{item.name}</Text>
@@ -113,6 +139,18 @@ export default function InventoryScreen({ navigation }: Props) {
                   <View style={styles.quantityBadge}>
                     <Text style={styles.quantityText}>×{item.quantity}</Text>
                   </View>
+                )}
+                {isBook && (
+                  <TouchableOpacity
+                    style={[styles.equipBtn, alreadyRead && styles.equipBtnOn]}
+                    onPress={() => handleRead(item)}
+                    disabled={alreadyRead}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.equipBtnText, alreadyRead && styles.equipBtnTextOn]}>
+                      {alreadyRead ? 'Lu ✓' : 'Lire'}
+                    </Text>
+                  </TouchableOpacity>
                 )}
                 {slot && (
                   <TouchableOpacity
@@ -131,6 +169,14 @@ export default function InventoryScreen({ navigation }: Props) {
           stickySectionHeadersEnabled={false}
         />
       )}
+
+      <ActivityResultModal
+        visible={result !== null}
+        title={result?.title ?? ''}
+        lines={result?.lines ?? []}
+        note={result?.note}
+        onClose={() => setResult(null)}
+      />
     </SafeAreaView>
   );
 }

@@ -21,6 +21,7 @@ import BottomSheet from '../components/BottomSheet';
 import ActivityResultModal from '../components/ActivityResultModal';
 import FatigueGauge from '../components/FatigueGauge';
 import { VILLAGE_POIS } from '../data/villagemap';
+import { bookEffectFor } from '../data/bookEffects';
 import type { PointOfInterest } from '../components/PixelMap';
 import type { Player, StatDelta } from '../types/game';
 import type { ChangeLine } from '../utils/statLabels';
@@ -32,45 +33,38 @@ type Props = NativeStackScreenProps<RootStackParamList, 'VillageMap'>;
 const rint = (min: number, max: number): number =>
   Math.floor(Math.random() * (max - min + 1)) + min;
 
-/** Does the player own the craftsman's manual? (+gold at forge/craftsman). */
-const hasCraftManual = (p: Player): boolean =>
-  p.inventory.some((i) => i.subtype === 'book_craft');
+/** Has the player READ the craftsman's manual? (+2 g at forge/craftsman). */
+const hasReadCraftManual = (p: Player): boolean =>
+  (p.readBooks ?? []).includes('book_craft');
+
+/** +2 g gold bonus once the craft manual has been read. */
+const craftBonus = (p: Player): number => (hasReadCraftManual(p) ? 2 : 0);
+const craftNote = (p: Player): string | undefined =>
+  hasReadCraftManual(p) ? '+2 g — manuel artisanal lu' : undefined;
 
 // ─── Book reading ─────────────────────────────────────────────────────────────
-// Every book grants reading (literature); most also train a specialty.
-// Add new books here later — owning the book makes "Lire : …" appear at home.
-const BOOK_EFFECTS: Record<
-  string,
-  { label: string; desc: string; statDelta?: StatDelta; healthDelta?: number }
-> = {
-  book_general:  { label: 'Traité de culture',  desc: 'Vous enrichissez votre culture générale.',  statDelta: { knowledgeSkills: { literature: 1, generalCulture: 2 } } },
-  book_religion: { label: 'Livre saint',         desc: 'Vous méditez les Écritures sacrées.',       statDelta: { knowledgeSkills: { literature: 1, religion: 2 } } },
-  book_strategy: { label: 'Traité de stratégie', desc: "Vous étudiez l'art de la guerre.",           statDelta: { knowledgeSkills: { literature: 1, strategy: 2 } } },
-  book_medicine: { label: 'Traité de médecine',  desc: 'Vous apprenez à préserver votre corps.',     statDelta: { knowledgeSkills: { literature: 1 } }, healthDelta: 2 },
-  book_craft:    { label: 'Manuel artisanal',    desc: 'Vous révisez les techniques de métier.',     statDelta: { knowledgeSkills: { literature: 1 } } },
-  book_fencing:  { label: "Manuel d'escrime",    desc: "Vous perfectionnez le maniement de l'épée.", statDelta: { knowledgeSkills: { literature: 1 }, combatSkills: { longSword: 2 } } },
-  book_hunting:  { label: 'Guide de chasse',     desc: 'Vous affûtez votre adresse au tir.',         statDelta: { knowledgeSkills: { literature: 1 }, combatSkills: { archery: 2 } } },
-  book_milon:    { label: 'Manuscrit de Milon de Crotone', desc: 'Vous suivez ses exercices de force.', statDelta: { knowledgeSkills: { literature: 1 }, physicalStats: { strength: 2 } } },
-};
+// Book effects live in src/data/bookEffects.ts (shared with the inventory screen).
 
 /** One "Lire : …" secondary activity per distinct book the player owns. */
 function readActivitiesFor(player: Player): Activity[] {
   const seen = new Set<string>();
   const acts: Activity[] = [];
+  const read = new Set(player.readBooks ?? []);
   for (const item of player.inventory) {
-    if (item.category !== 'book' || seen.has(item.subtype)) continue;
+    if (item.category !== 'book' || seen.has(item.subtype) || read.has(item.subtype)) continue;
     seen.add(item.subtype);
-    const fx = BOOK_EFFECTS[item.subtype] ?? {
-      label: item.name,
-      desc: 'Vous lisez attentivement.',
-      statDelta: { knowledgeSkills: { literature: 1 } },
-    };
+    const fx = bookEffectFor(item.subtype, item.name);
     acts.push({
       id: `read_${item.subtype}`,
       label: `Lire : ${fx.label}`,
-      desc: fx.desc,
-      kind: 'secondary',
-      req: () => ({ location: 'home', statDelta: fx.statDelta, healthDelta: fx.healthDelta }),
+      desc: `${fx.desc} (lecture unique)`,
+      kind: 'principal',
+      req: () => ({
+        location: 'home',
+        statDelta: fx.statDelta,
+        healthDelta: fx.healthDelta,
+        markBookRead: item.subtype,
+      }),
     });
   }
   return acts;
@@ -83,7 +77,8 @@ type ActivityKind = 'principal' | 'secondary' | 'free';
 interface Activity {
   id: string;
   label: string;
-  desc: string;
+  /** Static text, or computed from the player (e.g. show a bonus once unlocked). */
+  desc: string | ((p: Player) => string);
   kind: ActivityKind;
   /** Pure navigation — opens another screen, costs no action slot. */
   navigate?: 'Shop' | 'Relations';
@@ -178,9 +173,10 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
   ],
   forge: [
     {
-      id: 'workForge', label: 'Travailler à la forge', desc: 'Souffler, forger, tremper. On y côtoie le forgeron.',
+      id: 'workForge', label: 'Travailler à la forge',
+      desc: (p) => 'Souffler, forger, tremper. On y côtoie le forgeron.' + (hasReadCraftManual(p) ? ' +2 g (manuel artisanal lu).' : ''),
       kind: 'principal',
-      req: (p) => ({ location: 'forge', statDelta: { gold: rint(1, 3) + (hasCraftManual(p) ? 2 : 0), craftSkills: { blacksmithing: 2 }, physicalStats: { strength: 1 } }, ensureNpc: { role: 'blacksmith', profession: 'le forgeron' }, npcScoreDelta: 1 }),
+      req: (p) => ({ location: 'forge', statDelta: { gold: rint(1, 3) + craftBonus(p), craftSkills: { blacksmithing: 2 }, physicalStats: { strength: 1 } }, ensureNpc: { role: 'blacksmith', profession: 'le forgeron' }, npcScoreDelta: 1, note: craftNote(p) }),
     },
     {
       id: 'trainHeavy', label: "S'entraîner (arme lourde)", desc: "Manier le marteau du forgeron. Il n'apprécie guère qu'on use son outil.",
@@ -311,14 +307,16 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
   ],
   craftsman: [
     {
-      id: 'workTailoring', label: 'Travailler chez le tailleur', desc: "Coudre, couper, assembler. On y connaît l'artisan.",
+      id: 'workTailoring', label: 'Travailler chez le tailleur',
+      desc: (p) => "Coudre, couper, assembler. On y connaît l'artisan." + (hasReadCraftManual(p) ? ' +2 g (manuel artisanal lu).' : ''),
       kind: 'principal',
-      req: (p) => ({ location: 'craftsman', statDelta: { gold: rint(1, 3) + (hasCraftManual(p) ? 2 : 0), craftSkills: { tailoring: 2 }, physicalStats: { agility: 1 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1 }),
+      req: (p) => ({ location: 'craftsman', statDelta: { gold: rint(1, 3) + craftBonus(p), craftSkills: { tailoring: 2 }, physicalStats: { agility: 1 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1, note: craftNote(p) }),
     },
     {
-      id: 'workBowyer', label: "Travailler chez l'archer-armurier", desc: "Façonner arcs et flèches aux côtés de l'artisan.",
+      id: 'workBowyer', label: "Travailler chez l'archer-armurier",
+      desc: (p) => "Façonner arcs et flèches aux côtés de l'artisan." + (hasReadCraftManual(p) ? ' +2 g (manuel artisanal lu).' : ''),
       kind: 'principal',
-      req: (p) => ({ location: 'craftsman', statDelta: { gold: rint(1, 3) + (hasCraftManual(p) ? 2 : 0), craftSkills: { bowyer: 2 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1 }),
+      req: (p) => ({ location: 'craftsman', statDelta: { gold: rint(1, 3) + craftBonus(p), craftSkills: { bowyer: 2 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1, note: craftNote(p) }),
     },
   ],
   temple: [
@@ -484,7 +482,7 @@ export default function VillageMapScreen({ navigation }: Props) {
                       )}
                     </View>
                     <Text style={[styles.activityDesc, locked && styles.activityDescLocked]}>
-                      {locked ? msg : act.desc}
+                      {locked ? msg : typeof act.desc === 'function' ? act.desc(player) : act.desc}
                     </Text>
                   </View>
                   {!locked && <Text style={styles.activityArrow}>›</Text>}

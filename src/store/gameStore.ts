@@ -242,6 +242,7 @@ function makeDefaultPlayer(
       honor: 0,
     },
     inventory: [],
+    readBooks: [],
     equipment: { ...EMPTY_EQUIPMENT },
     merchantStock: {},
     merchantStockMonth: GAME_START_YEAR * 12 + 1,
@@ -378,6 +379,10 @@ export interface ActivityRequest {
   statDelta?: StatDelta;
   /** Raises max health and heals by this amount (e.g. reading a medical text). */
   healthDelta?: number;
+  /** Records this book subtype as read (one-time); blocks re-reading. */
+  markBookRead?: string;
+  /** Extra clarifying note appended to the result popup. */
+  note?: string;
   christianRelationDelta?: number;
   paganRelationDelta?: number;
   /** Find-or-create a recurring NPC (blacksmith/merchant/artisan) and nudge their score. */
@@ -713,6 +718,11 @@ export const useGameStore = create<GameState>()(
           return { ok: false, reason: 'Vous êtes épuisé. Passez au mois suivant pour récupérer vos forces.' };
         }
 
+        // A book can only be read once.
+        if (req.markBookRead && (player.readBooks ?? []).includes(req.markBookRead)) {
+          return { ok: false, reason: 'Vous avez déjà lu ce livre.' };
+        }
+
         let next: Player = { ...player };
         const lines: ChangeLine[] = [];
         const noteParts: string[] = [];
@@ -746,6 +756,12 @@ export const useGameStore = create<GameState>()(
           next = { ...next, maxHealth: newMax, health: Math.min(newMax, curHp + req.healthDelta) };
           lines.push({ label: 'Points de vie', value: req.healthDelta });
         }
+
+        // 1c. Record a finished book (one-time) + optional clarifying note.
+        if (req.markBookRead && !(next.readBooks ?? []).includes(req.markBookRead)) {
+          next = { ...next, readBooks: [...(next.readBooks ?? []), req.markBookRead] };
+        }
+        if (req.note) noteParts.push(req.note);
 
         // 2. Faith-based relation shift (priest + Christians vs pagans)
         const cd = req.christianRelationDelta ?? 0;

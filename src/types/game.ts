@@ -154,6 +154,8 @@ export interface Player {
   craftSkills: CraftSkills;
   prestige: Prestige;
   inventory: Item[];
+  /** Subtypes of books already read (a book can only be read once). */
+  readBooks: string[];
   /** Worn equipment, by slot (subtype values). */
   equipment: Equipment;
   /** How many of each subtype the merchant has bought back (caps re-selling). */
