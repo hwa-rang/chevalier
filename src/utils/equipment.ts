@@ -9,9 +9,9 @@ export const SLOT_BY_SUBTYPE: Record<string, EquipSlot> = {
   helmet_nasal: 'helmet',
   helmet_corbeau: 'helmet',
   helmet_roa: 'helmet',
+  helmet_chapel: 'helmet',
+  // Reward helmets (not sold): crusader = high religion, apocryphal = pagan path.
   helmet_crusader: 'helmet',
-  // Earned via very high "religion" / "apocryphal" knowledge (not sold).
-  // helmet_apocryphal has no sprite yet — it equips but renders no helmet art.
   helmet_apocryphal: 'helmet',
   // Armor
   full_plate: 'armor',
@@ -28,6 +28,7 @@ export const SLOT_BY_SUBTYPE: Record<string, EquipSlot> = {
   lance: 'weapon',
   bardiche: 'weapon',
   bow: 'weapon',
+  training_staff: 'weapon',
 };
 
 export function slotForSubtype(subtype: string): EquipSlot | null {

@@ -1,6 +1,7 @@
 import type { Player } from '../types/game';
 import type { GameEvent } from '../data/events';
 import { MONTHLY_EVENTS, ANNUAL_EVENTS } from '../data/events';
+import { QUEST_OFFER_EVENTS } from '../data/quests';
 
 function getSkillValue(player: Player, skillPath: string): number {
   const dotIndex = skillPath.indexOf('.');
@@ -47,6 +48,23 @@ export function filterEligibleEvents(
     )
       return false;
 
+    const flags = player.flags ?? [];
+    if (c.requiredFlag !== undefined && !flags.includes(c.requiredFlag)) return false;
+    if (c.forbiddenFlag !== undefined) {
+      const forbidden = Array.isArray(c.forbiddenFlag) ? c.forbiddenFlag : [c.forbiddenFlag];
+      if (forbidden.some((f) => flags.includes(f))) return false;
+    }
+    if (c.noActiveQuest && player.activeQuest) return false;
+    if (c.minYear !== undefined && player.currentYear < c.minYear) return false;
+    if (c.maxYear !== undefined && player.currentYear > c.maxYear) return false;
+    if (c.minTempleVisits !== undefined && (player.templeVisits ?? 0) < c.minTempleVisits)
+      return false;
+    if (
+      c.requiresNpcRole !== undefined &&
+      !player.relations.some((r) => r.npcRole === c.requiresNpcRole)
+    )
+      return false;
+
     return true;
   });
 }
@@ -63,16 +81,28 @@ function pickRandom<T>(arr: T[]): T {
 export function rollMonthlyEvent(player: Player): GameEvent | null {
   const rep = player.prestige.reputation;
   const lowRepBonus = rep < 0 ? Math.min(0.35, (-rep / 100) * 0.35) : 0;
-  const chance = 0.15 + lowRepBonus;
-  if (Math.random() > chance) return null;
-  const eligible = filterEligibleEvents(player, MONTHLY_EVENTS);
+
+  // Guarantee at least 3 events a year (the year-end annual event counts as 1):
+  // if the remaining monthly rolls barely cover what's missing, force the event.
+  const count = player.eventsThisYear ?? 0;
+  const rollsLeftThisYear = 13 - player.currentMonth; // this roll included
+  const neededFromMonthly = Math.max(0, 2 - count);
+  const forced = neededFromMonthly >= rollsLeftThisYear;
+
+  const chance = 0.2 + lowRepBonus;
+  if (!forced && Math.random() > chance) return null;
+  const eligible = filterEligibleEvents(player, [...MONTHLY_EVENTS, ...QUEST_OFFER_EVENTS]);
   if (eligible.length === 0) return null;
-  return pickRandom(eligible);
+  // Priority events (rare scripted moments) preempt the random pool.
+  const priority = eligible.filter((e) => e.priority);
+  return pickRandom(priority.length > 0 ? priority : eligible);
 }
 
 /** Guaranteed to return one eligible annual event (null only if none pass conditions). */
 export function rollAnnualEvent(player: Player): GameEvent | null {
   const eligible = filterEligibleEvents(player, ANNUAL_EVENTS);
   if (eligible.length === 0) return null;
-  return pickRandom(eligible);
+  // Priority events (the 1315 famine…) preempt the random pool.
+  const priority = eligible.filter((e) => e.priority);
+  return pickRandom(priority.length > 0 ? priority : eligible);
 }

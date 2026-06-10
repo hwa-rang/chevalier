@@ -38,6 +38,9 @@ const rint = (min: number, max: number): number =>
 const hasReadCraftManual = (p: Player): boolean =>
   (p.readBooks ?? []).includes('book_craft');
 
+const hasBow = (p: Player): boolean => p.inventory.some((i) => i.subtype === 'bow');
+const hasSword = (p: Player): boolean => p.inventory.some((i) => i.subtype === 'long_sword');
+
 /** +2 g gold bonus once the craft manual has been read. */
 const craftBonus = (p: Player): number => (hasReadCraftManual(p) ? 2 : 0);
 const craftNote = (p: Player): string | undefined =>
@@ -136,17 +139,17 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
     {
       id: 'workChurch', label: "Aider l'église", desc: "Entretien, lectures, aide au prêtre. Bon pour l'âme.",
       kind: 'principal',
-      req: () => ({ location: 'church', statDelta: { knowledgeSkills: { religion: 2 } }, christianRelationDelta: 2 }),
+      req: () => ({ location: 'church', countsAs: 'church', statDelta: { knowledgeSkills: { religion: 2 }, prestige: { honor: 0.5, reputation: 0.3 } }, christianRelationDelta: 2 }),
     },
     {
       id: 'visitChurch', label: "Assister à l'office", desc: 'Messe du matin avec les villageois.',
       kind: 'secondary',
-      req: () => ({ location: 'church', christianRelationDelta: 1 }),
+      req: () => ({ location: 'church', countsAs: 'church', christianRelationDelta: 1 }),
     },
     {
       id: 'prayAlone', label: 'Prier en silence', desc: 'Un moment de recueillement personnel.',
       kind: 'secondary',
-      req: () => ({ location: 'church' }),
+      req: () => ({ location: 'church', countsAs: 'church' }),
     },
     {
       id: 'stealChurch', label: "Voler dans l'église", desc: "Sacrilège. Seulement pour les âmes les plus sombres.",
@@ -159,17 +162,19 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
     {
       id: 'workFarm', label: 'Travailler aux champs', desc: "Labourer, semer, récolter. Éreintant mais honnête.",
       kind: 'principal',
-      req: () => ({ location: 'fields', statDelta: { gold: rint(1, 3), physicalStats: { endurance: 2 } } }),
+      req: () => ({ location: 'fields', statDelta: { gold: rint(1, 3), physicalStats: { endurance: 2 }, prestige: { honor: 0.2 } } }),
     },
     {
       id: 'huntLegal', label: 'Chasser (légal)', desc: 'Gibier petit dans les zones autorisées.',
       kind: 'principal',
-      req: () => ({ location: 'fields', statDelta: { gold: rint(1, 2), combatSkills: { archery: 1 } } }),
+      cond: (p) => !hasBow(p), condMsg: 'Requiert un arc.',
+      req: () => ({ location: 'fields', countsAs: 'hunt', statDelta: { gold: rint(1, 2), combatSkills: { archery: 1 } } }),
     },
     {
       id: 'huntIllegal', label: 'Braconner', desc: "Chasse sur les terres du seigneur. Interdit mais lucratif.",
       kind: 'principal',
-      req: () => ({ location: 'fields', statDelta: { gold: rint(2, 5), combatSkills: { archery: 2 }, prestige: { honor: -1 } } }),
+      cond: (p) => !hasBow(p), condMsg: 'Requiert un arc.',
+      req: () => ({ location: 'fields', countsAs: 'hunt', statDelta: { gold: rint(2, 5), combatSkills: { archery: 2 }, prestige: { honor: -1 } } }),
     },
   ],
   forge: [
@@ -177,7 +182,7 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
       id: 'workForge', label: 'Travailler à la forge',
       desc: (p) => 'Souffler, forger, tremper. On y côtoie le forgeron.' + (hasReadCraftManual(p) ? ' +2 g (manuel artisanal lu).' : ''),
       kind: 'principal',
-      req: (p) => ({ location: 'forge', statDelta: { gold: rint(1, 3) + craftBonus(p), craftSkills: { blacksmithing: 2 }, physicalStats: { strength: 1 } }, ensureNpc: { role: 'blacksmith', profession: 'le forgeron' }, npcScoreDelta: 1, note: craftNote(p) }),
+      req: (p) => ({ location: 'forge', countsAs: 'craft', statDelta: { gold: rint(1, 3) + craftBonus(p), craftSkills: { blacksmithing: 2 }, physicalStats: { strength: 1 } }, ensureNpc: { role: 'blacksmith', profession: 'le forgeron' }, npcScoreDelta: 1, note: craftNote(p) }),
     },
     {
       id: 'trainHeavy', label: "S'entraîner (arme lourde)", desc: "Manier le marteau du forgeron. Il n'apprécie guère qu'on use son outil.",
@@ -226,10 +231,10 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
   ],
   guardhouse: [
     {
-      id: 'workGuard', label: 'Travailler comme garde', desc: "Patrouiller et maintenir l'ordre. Réservé aux adultes.",
+      id: 'workGuard', label: 'Travailler comme garde', desc: "Patrouiller et maintenir l'ordre. Le village respecte ses gardes.",
       kind: 'principal',
       cond: (p) => p.age < 16, condMsg: 'Requiert 16 ans.',
-      req: () => ({ location: 'guardhouse', statDelta: { gold: rint(2, 4), combatSkills: { swordAndShield: 1 } } }),
+      req: () => ({ location: 'guardhouse', statDelta: { gold: rint(2, 4), combatSkills: { swordAndShield: 1 }, prestige: { reputation: 1, honor: 0.5 } } }),
     },
     {
       id: 'trainWithStick', label: "S'entraîner au bâton", desc: "Le maniement du bâton affûte la lance ou l'épée longue.",
@@ -245,22 +250,23 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
     {
       id: 'trainAloneWeapon', label: "S'entraîner à l'épée", desc: "Pratiquer l'épée longue sans adversaire.",
       kind: 'principal',
+      cond: (p) => !hasSword(p), condMsg: 'Requiert une épée longue.',
       req: () => ({ location: 'guardhouse', statDelta: { combatSkills: { longSword: 1 } } }),
     },
     {
       id: 'trainWithMaster', label: 'Entraînement avec maître', desc: 'Apprendre des techniques avancées. Requiert un maître.',
       kind: 'principal',
-      cond: (p) => !p.relations.some((r) => r.type === 'master'),
-      condMsg: "Vous n'avez pas de maître.",
+      cond: (p) => !p.relations.some((r) => r.type === 'master') || !hasSword(p),
+      condMsg: 'Requiert un maître et une épée longue.',
       req: () => ({ location: 'guardhouse', statDelta: { combatSkills: { longSword: 3 } } }),
     },
   ],
   bailiff: [
     {
-      id: 'workBailiff', label: 'Travailler pour le bailli', desc: "Clercs, collecte d'impôts, administration seigneuriale.",
+      id: 'workBailiff', label: 'Travailler pour le bailli', desc: "Clercs, collecte d'impôts, administration seigneuriale. On y gagne l'estime des notables.",
       kind: 'principal',
       cond: (p) => p.age < 16, condMsg: 'Requiert 16 ans.',
-      req: () => ({ location: 'bailiff', statDelta: { gold: rint(3, 6), knowledgeSkills: { generalCulture: 1, eloquence: 1 } } }),
+      req: () => ({ location: 'bailiff', statDelta: { gold: rint(3, 6), knowledgeSkills: { generalCulture: 1, eloquence: 1 }, prestige: { reputation: 1, honor: 0.2 } } }),
     },
   ],
   forest: [
@@ -282,12 +288,14 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
     {
       id: 'huntLegalForest', label: 'Chasser (légal)', desc: "Petit gibier dans la clairière autorisée.",
       kind: 'principal',
-      req: () => ({ location: 'forest', statDelta: { gold: rint(1, 2), combatSkills: { archery: 1 } } }),
+      cond: (p) => !hasBow(p), condMsg: 'Requiert un arc.',
+      req: () => ({ location: 'forest', countsAs: 'hunt', statDelta: { gold: rint(1, 2), combatSkills: { archery: 1 } } }),
     },
     {
       id: 'huntIllegalForest', label: 'Braconner dans la forêt', desc: 'Cerf et sanglier sur les terres du seigneur. Risqué.',
       kind: 'principal',
-      req: () => ({ location: 'forest', statDelta: { gold: rint(2, 6), combatSkills: { archery: 2 }, prestige: { honor: -1 } } }),
+      cond: (p) => !hasBow(p), condMsg: 'Requiert un arc.',
+      req: () => ({ location: 'forest', countsAs: 'hunt', statDelta: { gold: rint(2, 6), combatSkills: { archery: 2 }, prestige: { honor: -1 } } }),
     },
   ],
   river: [
@@ -311,13 +319,13 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
       id: 'workTailoring', label: 'Travailler chez le tailleur',
       desc: (p) => "Coudre, couper, assembler. On y connaît l'artisan." + (hasReadCraftManual(p) ? ' +2 g (manuel artisanal lu).' : ''),
       kind: 'principal',
-      req: (p) => ({ location: 'craftsman', statDelta: { gold: rint(1, 3) + craftBonus(p), craftSkills: { tailoring: 2 }, physicalStats: { agility: 1 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1, note: craftNote(p) }),
+      req: (p) => ({ location: 'craftsman', countsAs: 'craft', statDelta: { gold: rint(1, 3) + craftBonus(p), craftSkills: { tailoring: 2 }, physicalStats: { agility: 1 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1, note: craftNote(p) }),
     },
     {
       id: 'workBowyer', label: "Travailler chez l'archer-armurier",
       desc: (p) => "Façonner arcs et flèches aux côtés de l'artisan." + (hasReadCraftManual(p) ? ' +2 g (manuel artisanal lu).' : ''),
       kind: 'principal',
-      req: (p) => ({ location: 'craftsman', statDelta: { gold: rint(1, 3) + craftBonus(p), craftSkills: { bowyer: 2 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1, note: craftNote(p) }),
+      req: (p) => ({ location: 'craftsman', countsAs: 'craft', statDelta: { gold: rint(1, 3) + craftBonus(p), craftSkills: { bowyer: 2 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1, note: craftNote(p) }),
     },
   ],
   temple: [

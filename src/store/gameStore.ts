@@ -20,6 +20,8 @@ import { generateFamily } from '../utils/familyGenerator';
 import { makeNpc, makeRandomFriend } from '../utils/relationGenerator';
 import { formatStatDelta, type ChangeLine } from '../utils/statLabels';
 import type { GameEvent } from '../data/events';
+import { questById } from '../data/quests';
+import { DEFAULT_TITLE_ID, newlyEarnedTitles, titleById } from '../data/titles';
 import { rollMonthlyEvent, rollAnnualEvent } from '../utils/eventEngine';
 
 // Action economy: a single fatigue gauge spent each month.
@@ -145,6 +147,17 @@ const SKILL_HELMET_UNLOCKS: Array<{
   },
 ];
 
+/** Unlocks any newly earned titles; the newest becomes the displayed one. */
+function applyTitleUnlocks(player: Player): { player: Player; notes: string[] } {
+  const earned = newlyEarnedTitles(player);
+  if (earned.length === 0) return { player, notes: [] };
+  const unlocked = [...(player.unlockedTitles ?? [DEFAULT_TITLE_ID]), ...earned];
+  return {
+    player: { ...player, unlockedTitles: unlocked, title: earned[earned.length - 1] },
+    notes: earned.map((id) => `Nouveau titre : « ${titleById(id).label} » !`),
+  };
+}
+
 /** Grants any knowledge-gated helmet the player now qualifies for and doesn't own. */
 function grantSkillUnlocks(player: Player): { player: Player; notes: string[] } {
   let p = player;
@@ -180,13 +193,14 @@ function buildGriefDelta(statGroup: GriefModifier['statGroup'], statKey: string,
 // Default player factory
 // ---------------------------------------------------------------------------
 
-const GAME_START_YEAR = 1314;
+const GAME_START_YEAR = 1312;
 
 function makeDefaultPlayer(
   name: string,
   background: Background,
   skinTone: SkinTone,
   hair: Hair,
+  ambition: string,
 ): Player {
   const startingAge = 15;
 
@@ -197,6 +211,7 @@ function makeDefaultPlayer(
     skinTone,
     hair,
     background,
+    ambition,
     religion: 'christian',
     gold: 10,
     health: 100,
@@ -240,6 +255,13 @@ function makeDefaultPlayer(
     },
     inventory: [],
     readBooks: [],
+    flags: [],
+    activeQuest: null,
+    banditsDefeated: 0,
+    eventsThisYear: 0,
+    title: DEFAULT_TITLE_ID,
+    unlockedTitles: [DEFAULT_TITLE_ID],
+    counters: { churchMonth: 0, churchStreak: 0, churchYear: 0, huntMonth: 0, huntStreak: 0, craftJobs: 0 },
     equipment: { ...EMPTY_EQUIPMENT },
     merchantStock: {},
     merchantStockMonth: GAME_START_YEAR * 12 + 1,
@@ -380,6 +402,8 @@ export interface ActivityRequest {
   markBookRead?: string;
   /** Extra clarifying note appended to the result popup. */
   note?: string;
+  /** Behaviour category for title counters (church piety, hunting, craft). */
+  countsAs?: 'church' | 'hunt' | 'craft';
   christianRelationDelta?: number;
   paganRelationDelta?: number;
   /** Find-or-create a recurring NPC (blacksmith/merchant/artisan) and nudge their score. */
@@ -403,9 +427,18 @@ export interface ActivityResult {
 }
 
 export interface TimeTransition {
-  kind: 'month' | 'year';
+  kind: 'month' | 'year' | 'death';
   fromYear: number;
   toYear: number;
+}
+
+/** Annual chance of dying of old age, by current age. */
+function oldAgeDeathChance(age: number): number {
+  if (age < 45) return 0;
+  if (age < 55) return 0.01;
+  if (age < 65) return 0.04;
+  if (age < 75) return 0.10;
+  return 0.20;
 }
 
 export interface GameState {
@@ -417,7 +450,7 @@ export interface GameState {
   deferredEvent: GameEvent | null;
 
   // Actions
-  initNewGame: (name: string, background: Background, skinTone: SkinTone, hair: Hair) => void;
+  initNewGame: (name: string, background: Background, skinTone: SkinTone, hair: Hair, ambition: string) => void;
   advanceMonth: () => void;
   /** Ends the time-transition overlay and surfaces any deferred event. */
   endTimeTransition: () => void;
@@ -431,6 +464,12 @@ export interface GameState {
   /** Resolves the pending event and returns a summary of what changed. */
   resolveEvent: (outcomeIndex: number) => ActivityResult;
   applyStatDelta: (delta: StatDelta) => void;
+  /** Wounds the player (combat, hardship). Health 0 = death at month's end. */
+  applyDamage: (amount: number) => void;
+  /** Marks a bandit camp as cleared (quest tracking). */
+  registerBanditVictory: () => void;
+  /** Equips an unlocked epithet as the displayed title. */
+  setTitle: (titleId: string) => void;
   /**
    * Adjusts relation scores by faith. The priest and any 'christian' NPC get
    * `christianDelta`; any 'pagan' NPC gets `paganDelta`. Used by the temple/church.
@@ -462,8 +501,8 @@ export const useGameStore = create<GameState>()(
       timeTransition: null,
       deferredEvent: null,
 
-      initNewGame: (name, background, skinTone, hair) => {
-        const player = makeDefaultPlayer(name, background, skinTone, hair);
+      initNewGame: (name, background, skinTone, hair, ambition) => {
+        const player = makeDefaultPlayer(name, background, skinTone, hair, ambition);
         set({ player, pendingEvent: null, timeTransition: null, deferredEvent: null });
       },
 
@@ -487,6 +526,20 @@ export const useGameStore = create<GameState>()(
           age += 1;
         }
 
+        // Title streaks: months with ≥2 church visits / hunts chain up.
+        const oldCounters = player.counters ?? {
+          churchMonth: 0, churchStreak: 0, churchYear: 0, huntMonth: 0, huntStreak: 0, craftJobs: 0,
+        };
+        const rolledCounters = {
+          ...oldCounters,
+          churchStreak: oldCounters.churchMonth >= 2 ? oldCounters.churchStreak + 1 : 0,
+          huntStreak: oldCounters.huntMonth >= 2 ? oldCounters.huntStreak + 1 : 0,
+          churchMonth: 0,
+          huntMonth: 0,
+          // churchYear keeps the passed year's total until titles are evaluated
+          // below; it is zeroed afterwards on a new year.
+        };
+
         let updatedPlayer: Player = {
           ...player,
           currentMonth: month,
@@ -495,6 +548,7 @@ export const useGameStore = create<GameState>()(
           skillActivityUsedThisMonth: false,
           principalActionsUsed: 0,
           secondaryActionsUsed: 0,
+          counters: rolledCounters,
         };
 
         const absMonth = year * 12 + month;
@@ -593,11 +647,163 @@ export const useGameStore = create<GameState>()(
           }
         }
 
-        const rolledEvent = isNewYear
-          ? rollAnnualEvent(updatedPlayer)
-          : rollMonthlyEvent(updatedPlayer);
+        // Titles earned over time (streaks, yearly piety, riches…)
+        {
+          const t = applyTitleUnlocks(updatedPlayer);
+          if (t.notes.length > 0) {
+            updatedPlayer = {
+              ...t.player,
+              history: [
+                ...t.player.history,
+                ...t.notes.map((text) => ({ age: updatedPlayer.age, month, text })),
+              ],
+            };
+          }
+          if (isNewYear && updatedPlayer.counters) {
+            updatedPlayer = {
+              ...updatedPlayer,
+              counters: { ...updatedPlayer.counters, churchYear: 0 },
+            };
+          }
+        }
+
+        // Monthly recovery: rest mends the body a little.
+        {
+          const maxHp = updatedPlayer.maxHealth ?? 100;
+          const hp = updatedPlayer.health ?? maxHp;
+          if (hp > 0 && hp < maxHp) {
+            updatedPlayer = { ...updatedPlayer, health: Math.min(maxHp, hp + 3) };
+          }
+        }
+
+        // ── Active contract: completion / expiry ───────────────────────────
+        let questEvent: GameEvent | null = null;
+        if (updatedPlayer.activeQuest) {
+          const def = questById(updatedPlayer.activeQuest.id);
+          if (!def) {
+            updatedPlayer = { ...updatedPlayer, activeQuest: null };
+          } else if (def.isComplete(updatedPlayer, updatedPlayer.activeQuest.baseline)) {
+            // Reward
+            if (def.reward.statDelta) {
+              updatedPlayer = applyDeltaToPlayer(updatedPlayer, def.reward.statDelta);
+            }
+            if (def.reward.gold) {
+              updatedPlayer = { ...updatedPlayer, gold: updatedPlayer.gold + def.reward.gold };
+            }
+            if (def.reward.npc) {
+              const { role, profession, scoreDelta } = def.reward.npc;
+              let idx = updatedPlayer.relations.findIndex((r) => r.npcRole === role);
+              if (idx < 0) {
+                updatedPlayer = {
+                  ...updatedPlayer,
+                  relations: [...updatedPlayer.relations, makeNpc(role, profession)],
+                };
+                idx = updatedPlayer.relations.length - 1;
+              }
+              updatedPlayer = {
+                ...updatedPlayer,
+                relations: updatedPlayer.relations.map((r, i) =>
+                  i === idx ? { ...r, score: clamp(r.score + scoreDelta) } : r,
+                ),
+              };
+            }
+            updatedPlayer = {
+              ...updatedPlayer,
+              activeQuest: null,
+              flags: [...(updatedPlayer.flags ?? []), `quest_done_${def.id}`],
+              history: [
+                ...updatedPlayer.history,
+                { age: updatedPlayer.age, month, text: `Contrat rempli : ${def.title}. ${def.rewardText}.` },
+              ],
+            };
+            questEvent = {
+              id: `quest_complete_${def.id}`,
+              type: 'monthly',
+              title: 'Contrat rempli !',
+              description: `${def.giver} tient parole : « ${def.title} » est accompli. Votre récompense : ${def.rewardText}.`,
+              outcomes: [{ label: 'Recevoir votre dû', historyText: `Récompense touchée : ${def.rewardText}.` }],
+            };
+          } else {
+            const absNow = updatedPlayer.currentYear * 12 + updatedPlayer.currentMonth;
+            if (absNow - updatedPlayer.activeQuest.startAbsMonth >= def.durationMonths) {
+              updatedPlayer = applyDeltaToPlayer(updatedPlayer, {
+                prestige: { reputation: -def.failPenalty },
+              });
+              updatedPlayer = {
+                ...updatedPlayer,
+                activeQuest: null,
+                history: [
+                  ...updatedPlayer.history,
+                  { age: updatedPlayer.age, month, text: `Contrat échoué : ${def.title}. Votre parole vaut moins désormais.` },
+                ],
+              };
+              questEvent = {
+                id: `quest_failed_${def.id}`,
+                type: 'monthly',
+                title: 'Contrat échoué',
+                description: `Le délai est passé : « ${def.title} » n'a pas été honoré. ${def.giver} s'en souviendra (Réputation −${def.failPenalty}).`,
+                outcomes: [{ label: 'Encaisser le revers', historyText: `Vous n'avez pas honoré le contrat de ${def.giver.toLowerCase()}.` }],
+              };
+            }
+          }
+        }
+
+        const rolledEvent =
+          questEvent ??
+          (isNewYear ? rollAnnualEvent(updatedPlayer) : rollMonthlyEvent(updatedPlayer));
+
+        // Pace tracking: at least 3 events a year (see rollMonthlyEvent pressure).
+        updatedPlayer = {
+          ...updatedPlayer,
+          eventsThisYear:
+            (isNewYear ? 0 : updatedPlayer.eventsThisYear ?? 0) + (rolledEvent ? 1 : 0),
+        };
 
         // Defer the event until the fade animation finishes (see endTimeTransition).
+        // ── Mortality ──────────────────────────────────────────────────────
+        // Health exhausted (wounds/illness) or old age at the turn of the year.
+        let deathCause: string | null = null;
+        if ((updatedPlayer.health ?? 100) <= 0) {
+          deathCause = 'Succombé à ses blessures';
+        } else if (isNewYear) {
+          // NB: player.activePlague is the pre-update value — the reset above
+          // happens at year end, so the plague year itself keeps its bite.
+          const chance =
+            oldAgeDeathChance(updatedPlayer.age) * (player.activePlague ? 2 : 1);
+          if (Math.random() < chance) {
+            deathCause =
+              updatedPlayer.age >= 60
+                ? "Mort de vieillesse, entouré des siens"
+                : 'Emporté par une mauvaise fièvre';
+          }
+        }
+
+        if (deathCause) {
+          set({
+            player: {
+              ...updatedPlayer,
+              isDead: true,
+              deathCause,
+              history: [
+                ...updatedPlayer.history,
+                {
+                  age: updatedPlayer.age,
+                  month,
+                  text: `${updatedPlayer.name} s'éteint à ${updatedPlayer.age} ans. ${deathCause}.`,
+                },
+              ],
+            },
+            pendingEvent: null,
+            deferredEvent: null,
+            timeTransition: {
+              kind: 'death',
+              fromYear: player.currentYear,
+              toYear: year,
+            },
+          });
+          return;
+        }
+
         set({
           player: updatedPlayer,
           pendingEvent: null,
@@ -664,6 +870,53 @@ export const useGameStore = create<GameState>()(
           lines.push({ label: `Relation (${relationType})`, value: amount });
         }
 
+        if (outcome.ensureNpc) {
+          const { role, profession, scoreDelta } = outcome.ensureNpc;
+          let idx = next.relations.findIndex((r) => r.npcRole === role);
+          if (idx < 0) {
+            const npc = makeNpc(role, profession);
+            next = { ...next, relations: [...next.relations, npc] };
+            idx = next.relations.length - 1;
+            noteParts.push(`Vous avez fait la connaissance de ${npc.name}.`);
+          }
+          if (scoreDelta !== 0) {
+            const target = next.relations[idx];
+            const updated = { ...target, score: clamp(target.score + scoreDelta) };
+            next = {
+              ...next,
+              relations: next.relations.map((r, i) => (i === idx ? updated : r)),
+            };
+            lines.push({ label: `Relation : ${updated.name}`, value: scoreDelta });
+          }
+        }
+
+        if (outcome.setFlags && outcome.setFlags.length > 0) {
+          const cur = next.flags ?? [];
+          next = { ...next, flags: [...cur, ...outcome.setFlags.filter((f) => !cur.includes(f))] };
+        }
+
+        if (outcome.healthDamage && outcome.healthDamage > 0) {
+          const hp = Math.max(0, (next.health ?? next.maxHealth ?? 100) - outcome.healthDamage);
+          next = { ...next, health: hp };
+          lines.push({ label: 'Points de vie', value: -outcome.healthDamage });
+          if (hp <= 0) noteParts.push('Vos forces vous abandonnent…');
+        }
+
+        if (outcome.acceptQuest) {
+          const def = questById(outcome.acceptQuest);
+          if (def && !next.activeQuest) {
+            next = {
+              ...next,
+              activeQuest: {
+                id: def.id,
+                startAbsMonth: next.currentYear * 12 + next.currentMonth,
+                baseline: def.baseline(next),
+              },
+            };
+            noteParts.push(`Objectif : ${def.objective} (${def.durationMonths} mois).`);
+          }
+        }
+
         if (outcome.setActivePlague) {
           next = { ...next, activePlague: true };
         }
@@ -684,6 +937,26 @@ export const useGameStore = create<GameState>()(
         const { player } = get();
         if (!player) return;
         set({ player: applyDeltaToPlayer(player, delta) });
+      },
+
+      applyDamage: (amount) => {
+        const { player } = get();
+        if (!player || amount <= 0) return;
+        const hp = Math.max(0, (player.health ?? player.maxHealth ?? 100) - amount);
+        set({ player: { ...player, health: hp } });
+      },
+
+      registerBanditVictory: () => {
+        const { player } = get();
+        if (!player) return;
+        set({ player: { ...player, banditsDefeated: (player.banditsDefeated ?? 0) + 1 } });
+      },
+
+      setTitle: (titleId) => {
+        const { player } = get();
+        if (!player) return;
+        if (!(player.unlockedTitles ?? [DEFAULT_TITLE_ID]).includes(titleId)) return;
+        set({ player: { ...player, title: titleId } });
       },
 
       applyReligionRelationDelta: (christianDelta, paganDelta) => {
@@ -870,6 +1143,28 @@ export const useGameStore = create<GameState>()(
           const unlock = grantSkillUnlocks(next);
           next = unlock.player;
           noteParts.push(...unlock.notes);
+        }
+
+        // Title counters (piety, hunting, craft) + freshly earned epithets
+        if (req.countsAs) {
+          const cnt = next.counters ?? {
+            churchMonth: 0, churchStreak: 0, churchYear: 0, huntMonth: 0, huntStreak: 0, craftJobs: 0,
+          };
+          next = {
+            ...next,
+            counters: {
+              ...cnt,
+              churchMonth: cnt.churchMonth + (req.countsAs === 'church' ? 1 : 0),
+              churchYear: cnt.churchYear + (req.countsAs === 'church' ? 1 : 0),
+              huntMonth: cnt.huntMonth + (req.countsAs === 'hunt' ? 1 : 0),
+              craftJobs: cnt.craftJobs + (req.countsAs === 'craft' ? 1 : 0),
+            },
+          };
+        }
+        {
+          const t = applyTitleUnlocks(next);
+          next = t.player;
+          noteParts.push(...t.notes);
         }
 
         // 6. Consume the action slot
@@ -1075,6 +1370,12 @@ export const useGameStore = create<GameState>()(
             titles: next.tournamentRecord.titles,
           };
           next = applyDeltaToPlayer(next, { prestige: { glory: -3 } });
+          // Defeat leaves its mark: bruises, sprains — sometimes worse.
+          const wound = 5 + Math.floor(Math.random() * 11); // 5–15
+          next = {
+            ...next,
+            health: Math.max(0, (next.health ?? next.maxHealth ?? 100) - wound),
+          };
         }
 
         next = {

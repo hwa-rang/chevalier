@@ -12,7 +12,8 @@ import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
 import { useGameStore, energyUsed } from '../store/gameStore';
 import CharacterSprite from '../components/CharacterSprite';
-import FatigueGauge from '../components/FatigueGauge';
+import FatigueGauge, { HealthGauge } from '../components/FatigueGauge';
+import { TITLES, titleById, DEFAULT_TITLE_ID } from '../data/titles';
 
 const BACKGROUND_LABELS: Record<string, string> = {
   noble: 'Noble',
@@ -41,6 +42,7 @@ function fameTierColor(glory: number): string {
 
 export default function CharacterScreen({ navigation }: CharacterScreenProps) {
   const player = useGameStore((s) => s.player);
+  const setTitle = useGameStore((s) => s.setTitle);
   const [flipped, setFlipped] = useState(false);
   const spriteScale = useRef(new Animated.Value(1)).current;
   const prevInvLen  = useRef(player?.inventory.length ?? 0);
@@ -86,6 +88,9 @@ export default function CharacterScreen({ navigation }: CharacterScreenProps) {
             <CharacterSprite player={player} flipped={flipped} />
           </Animated.View>
           <Text style={styles.viewerName}>{player.name}</Text>
+          <Text style={styles.viewerTitle}>
+            « {titleById(player.title ?? DEFAULT_TITLE_ID).label} »
+          </Text>
           <Text style={styles.viewerAge}>{player.age} ans</Text>
           <Text style={[styles.viewerTier, { color: tierColor }]}>{tier}</Text>
           <View style={styles.viewerActions}>
@@ -112,12 +117,42 @@ export default function CharacterScreen({ navigation }: CharacterScreenProps) {
           />
         </View>
 
-        {/* Energy */}
+        {/* Condition: health + energy */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Énergie</Text>
-          <View style={{ paddingVertical: 4 }}>
+          <Text style={styles.cardTitle}>Condition</Text>
+          <View style={{ paddingVertical: 4, gap: 10 }}>
+            <HealthGauge
+              health={player.health ?? player.maxHealth ?? 100}
+              maxHealth={player.maxHealth ?? 100}
+            />
             <FatigueGauge used={energyUsed(player)} />
           </View>
+        </View>
+
+        {/* Titles */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Titres</Text>
+          {TITLES.filter((t) => (player.unlockedTitles ?? [DEFAULT_TITLE_ID]).includes(t.id)).map(
+            (t) => {
+              const current = (player.title ?? DEFAULT_TITLE_ID) === t.id;
+              return (
+                <TouchableOpacity
+                  key={t.id}
+                  style={[styles.titleRow, current && styles.titleRowCurrent]}
+                  onPress={() => setTitle(t.id)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.titleLabel, current && styles.titleLabelCurrent]}>
+                    {current ? '✦ ' : ''}{t.label}
+                  </Text>
+                  <Text style={styles.titleDesc}>{t.desc}</Text>
+                </TouchableOpacity>
+              );
+            },
+          )}
+          <Text style={styles.titleHint}>
+            {TITLES.length - (player.unlockedTitles ?? [DEFAULT_TITLE_ID]).length} titres restent à découvrir…
+          </Text>
         </View>
 
         {/* Prestige */}
@@ -286,6 +321,41 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: 13,
     color: Colors.textSecondary,
+  },
+  viewerTitle: {
+    fontFamily: Fonts.title,
+    fontSize: 20,
+    color: Colors.accent,
+  },
+  titleRow: {
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.surfaceDark,
+  },
+  titleRowCurrent: {
+    backgroundColor: Colors.surfaceDark,
+    paddingHorizontal: 8,
+  },
+  titleLabel: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 14,
+    color: Colors.textPrimary,
+  },
+  titleLabelCurrent: {
+    color: Colors.accent,
+  },
+  titleDesc: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  titleHint: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+    marginTop: 6,
   },
   viewerTier: {
     fontFamily: Fonts.bodyBold,

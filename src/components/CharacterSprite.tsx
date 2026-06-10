@@ -27,6 +27,9 @@ const HELMET: Record<string, number> = {
   helmet_corbeau: require('../assets/sprites/png/helmet-corbeau.png'),
   helmet_roa: require('../assets/sprites/png/helmet-roa.png'),
   helmet_crusader: require('../assets/sprites/png/helmet-crusader.png'),
+  helmet_chapel: require('../assets/sprites/png/helmet-chapel.png'),
+  // Reward helmets: pagan counterpart of the crusader bascinet.
+  helmet_apocryphal: require('../assets/sprites/png/helmet-paien.png'),
 };
 
 const ARMOR: Record<string, number> = {
@@ -48,6 +51,7 @@ const WEAPON: Record<string, number> = {
   lance: require('../assets/sprites/png/weapon-lance.png'),
   bardiche: require('../assets/sprites/png/weapon-bardiche.png'),
   bow: require('../assets/sprites/png/weapon-bow.png'),
+  training_staff: require('../assets/sprites/png/weapon-staff.png'),
 };
 
 // ─── Layer ─────────────────────────────────────────────────────────────────────

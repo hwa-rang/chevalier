@@ -10024,7 +10024,7 @@
     <rect x="59" y="33.5" width="1" height="1" fill="#414345"/>
     <rect x="60" y="33.5" width="1" height="1" fill="#1f1b18"/>
   </g>
-  <g id="casque-bascinet-bec_de_corbeau">
+  <g id="casque-bascinet-bec_de_corbeau" display="none">
     <g id="Calque_41" data-name="Calque_4">
       <rect x="41" y="26.5" width="1" height="1" fill="#95989b"/>
       <rect x="41" y="28.5" width="1" height="1" fill="#787c80"/>
@@ -10829,7 +10829,7 @@
     <rect x="55" y="33.5" width="1" height="1" fill="#181917"/>
     <rect x="56" y="33.5" width="1" height="1" fill="#0b0909"/>
   </g>
-  <g id="casque-special-paien" display="none">
+  <g id="casque-special-paien">
     <rect x="50" y="4.5" width="1" height="1" fill="#050505"/>
     <rect x="51" y="4.5" width="1" height="1" fill="#080a07"/>
     <rect x="52" y="4.5" width="1" height="1" fill="#040404"/>

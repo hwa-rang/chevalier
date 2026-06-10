@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import {
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -12,12 +11,14 @@ import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
 import { useGameStore, energyUsed } from '../store/gameStore';
-import PixelMap from '../components/PixelMap';
+import ZoomableImageMap from '../components/ZoomableImageMap';
 import BottomSheet from '../components/BottomSheet';
 import ActivityResultModal from '../components/ActivityResultModal';
 import FatigueGauge from '../components/FatigueGauge';
 import {
-  EUROPE_MAP,
+  EUROPE_MAP_IMAGE,
+  EUROPE_MAP_WIDTH,
+  EUROPE_MAP_HEIGHT,
   TOURNAMENT_TYPE_COLORS,
   TOURNAMENT_TYPE_ICONS,
   TOURNAMENT_TYPE_LABELS,
@@ -304,8 +305,11 @@ function BanditSheet({ camp, player, onFight, onRest }: BanditSheetProps) {
 export default function EuropeMapScreen({ navigation }: Props) {
   const player = useGameStore((s) => s.player);
   const applyStatDelta = useGameStore((s) => s.applyStatDelta);
+  const applyDamage = useGameStore((s) => s.applyDamage);
+  const registerBanditVictory = useGameStore((s) => s.registerBanditVictory);
   const addToHistory = useGameStore((s) => s.addToHistory);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [legendOpen, setLegendOpen] = useState(false);
   const [result, setResult] = useState<{ title: string; lines: ChangeLine[]; note?: string } | null>(null);
 
   const pois = useMemo(
@@ -340,6 +344,9 @@ export default function EuropeMapScreen({ navigation }: Props) {
     const winChance = Math.min(0.9, Math.max(0.1, 0.5 + (power - camp.difficulty) / 100));
     if (Math.random() < winChance) {
       applyStatDelta({ gold: camp.rewardGold, prestige: { glory: camp.rewardGlory, reputation: 3, honor: 3 } });
+      registerBanditVictory();
+      const scratch = 3 + Math.floor(Math.random() * 6); // 3–8: even victory draws blood
+      applyDamage(scratch);
       addToHistory(`Vous avez nettoyé ${camp.label}. Les routes sont plus sûres.`);
       setResult({
         title: camp.label,
@@ -349,18 +356,22 @@ export default function EuropeMapScreen({ navigation }: Props) {
           { label: 'Gloire', value: camp.rewardGlory },
           { label: 'Réputation', value: 3 },
           { label: 'Honneur', value: 3 },
+          { label: 'Points de vie', value: -scratch },
         ],
       });
     } else {
+      const wound = 12 + Math.floor(Math.random() * 14); // 12–25
       applyStatDelta({ physicalStats: { strength: -3, endurance: -4 }, prestige: { glory: -2 } });
+      applyDamage(wound);
       addToHistory(`Vous avez été repoussé par les brigands de ${camp.label}.`);
       setResult({
         title: camp.label,
-        note: 'Défaite… vous repartez blessé.',
+        note: 'Défaite… vous repartez grièvement blessé.',
         lines: [
           { label: 'Force', value: -3 },
           { label: 'Endurance', value: -4 },
           { label: 'Gloire', value: -2 },
+          { label: 'Points de vie', value: -wound },
         ],
       });
     }
@@ -385,51 +396,51 @@ export default function EuropeMapScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backText}>← Retour</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Carte d'Europe</Text>
+        <Text style={styles.title}>🌍 Carte d'Europe</Text>
         <TouchableOpacity
           style={styles.tabBtn}
           onPress={() => navigation.navigate('VillageMap')}
         >
-          <Text style={styles.tabBtnText}>← Village</Text>
+          <Text style={styles.tabBtnText}>🏘 Village</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Tab bar */}
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={styles.tab}
-          onPress={() => navigation.navigate('VillageMap')}
-        >
-          <Text style={styles.tabText}>🏘 Village</Text>
-        </TouchableOpacity>
-        <View style={[styles.tab, styles.tabActive]}>
-          <Text style={[styles.tabText, styles.tabTextActive]}>🌍 Europe</Text>
-        </View>
       </View>
 
       {/* Energy gauge */}
-      <View style={{ backgroundColor: Colors.surfaceDark, borderBottomWidth: 1, borderBottomColor: Colors.border, paddingVertical: 10 }}>
+      <View style={styles.gaugeBar}>
         <FatigueGauge used={energyUsed(player)} />
       </View>
 
-      {/* Scrollable content: map + legend */}
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <PixelMap
-          mapData={EUROPE_MAP}
+      {/* Zoomable map — fills the remaining height; pinch to zoom, drag to pan */}
+      <View style={styles.mapWrap}>
+        <ZoomableImageMap
+          source={EUROPE_MAP_IMAGE}
+          mapWidth={EUROPE_MAP_WIDTH}
+          mapHeight={EUROPE_MAP_HEIGHT}
           pois={pois}
           onPoiPress={handlePoiPress}
-          width={400}
-          height={300}
-          tileSize={5}
+          fit="cover"
         />
-        <MapLegend />
-      </ScrollView>
+
+        {/* Legend toggle, overlaid on the map */}
+        <TouchableOpacity
+          style={styles.legendBtn}
+          onPress={() => setLegendOpen((v) => !v)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.legendBtnText}>{legendOpen ? '✕ Légende' : 'Légende'}</Text>
+        </TouchableOpacity>
+        {legendOpen && (
+          <View style={styles.legendOverlay} pointerEvents="none">
+            <MapLegend />
+          </View>
+        )}
+      </View>
 
       {/* Location bottom sheet (tournament or bandit camp) */}
       <BottomSheet
@@ -496,16 +507,30 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   tabBtnText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: Colors.surface,
+  gaugeBar: {
+    backgroundColor: Colors.surfaceDark,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+    paddingVertical: 10,
   },
-  tab: { flex: 1, paddingVertical: 10, alignItems: 'center' },
-  tabActive: { borderBottomWidth: 3, borderBottomColor: Colors.accent },
-  tabText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary },
-  tabTextActive: { color: Colors.textPrimary, fontWeight: '700' },
+  mapWrap: { flex: 1 },
+  legendBtn: {
+    position: 'absolute',
+    bottom: 14,
+    right: 10,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  legendBtnText: { fontFamily: Fonts.bodyBold, fontSize: 12, fontWeight: '700', color: '#fff' },
+  legendOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 44,
+  },
 });
 
 const sheetStyles = StyleSheet.create({

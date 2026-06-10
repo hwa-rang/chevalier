@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { CharacterCreationScreenProps } from '../navigation/types';
 import { useGameStore } from '../store/gameStore';
 import type { Background, SkinTone, Hair } from '../types/game';
+import { AMBITIONS } from '../data/ambitions';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
 
@@ -81,7 +82,8 @@ const STEP_TITLES = [
   'Votre Nom',
   'Votre Apparence',
   'Votre Origine',
-  'Votre Destin',
+  'Votre Ambition',
+  'Votre Destinée',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -194,14 +196,48 @@ function StepBackground({
   );
 }
 
+function StepAmbition({
+  selected,
+  onSelect,
+}: {
+  selected: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <View style={styles.stepBody}>
+      <Text style={styles.stepPrompt}>Quel destin poursuivez-vous ?</Text>
+      {AMBITIONS.map((a) => (
+        <TouchableOpacity
+          key={a.id}
+          style={[styles.bgCard, selected === a.id && styles.bgCardSelected]}
+          onPress={() => onSelect(a.id)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.bgName}>{a.label}</Text>
+          <Text style={styles.bgFlavor}>{a.flavor}</Text>
+          <View style={styles.tagRow}>
+            {a.objectives.map((o, i) => (
+              <View key={i} style={styles.tag}>
+                <Text style={styles.tagText}>{o.label}</Text>
+              </View>
+            ))}
+          </View>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
 function StepConfirm({
   name,
   toneColor,
   background,
+  ambitionLabel,
 }: {
   name: string;
   toneColor: string;
   background: { label: string; tags: string[] };
+  ambitionLabel: string;
 }) {
   return (
     <View style={styles.stepBody}>
@@ -220,6 +256,11 @@ function StepConfirm({
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Origine</Text>
           <Text style={styles.summaryValue}>{background.label}</Text>
+        </View>
+        <View style={styles.summaryDivider} />
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Ambition</Text>
+          <Text style={styles.summaryValue}>{ambitionLabel}</Text>
         </View>
         <View style={styles.summaryDivider} />
         <View>
@@ -241,7 +282,7 @@ function StepConfirm({
 // Screen
 // ---------------------------------------------------------------------------
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 
 export default function CharacterCreationScreen({
   navigation,
@@ -251,6 +292,7 @@ export default function CharacterCreationScreen({
   const [skinTone, setSkinTone] = useState<SkinTone>('tone1');
   const [hair, setHair] = useState<Hair>('brun');
   const [background, setBackground] = useState<Background>('noble');
+  const [ambition, setAmbition] = useState<string>(AMBITIONS[0].id);
 
   const initNewGame = useGameStore((state) => state.initNewGame);
 
@@ -260,10 +302,10 @@ export default function CharacterCreationScreen({
   };
 
   const handleNext = () => {
-    if (step < 4) {
+    if (step < 5) {
       setStep(((step + 1) as Step));
     } else {
-      initNewGame(name.trim(), background, skinTone, hair);
+      initNewGame(name.trim(), background, skinTone, hair, ambition);
       navigation.replace('Intro');
     }
   };
@@ -272,6 +314,7 @@ export default function CharacterCreationScreen({
 
   const selectedBg = BACKGROUNDS.find((b) => b.id === background)!;
   const selectedTone = SKIN_TONES.find((t) => t.id === skinTone)!;
+  const selectedAmbition = AMBITIONS.find((a) => a.id === ambition)!;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -290,7 +333,7 @@ export default function CharacterCreationScreen({
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{STEP_TITLES[step - 1]}</Text>
           <View style={styles.dots}>
-            {([1, 2, 3, 4] as Step[]).map((s) => (
+            {([1, 2, 3, 4, 5] as Step[]).map((s) => (
               <View
                 key={s}
                 style={[styles.dot, s === step && styles.dotActive]}
@@ -319,10 +362,14 @@ export default function CharacterCreationScreen({
             <StepBackground selected={background} onSelect={setBackground} />
           )}
           {step === 4 && (
+            <StepAmbition selected={ambition} onSelect={setAmbition} />
+          )}
+          {step === 5 && (
             <StepConfirm
               name={name}
               toneColor={selectedTone.color}
               background={selectedBg}
+              ambitionLabel={selectedAmbition.label}
             />
           )}
         </ScrollView>
@@ -338,7 +385,7 @@ export default function CharacterCreationScreen({
             activeOpacity={0.8}
           >
             <Text style={styles.nextButtonText}>
-              {step === 4 ? 'Commencer votre histoire' : 'Suivant'}
+              {step === 5 ? 'Commencer votre histoire' : 'Suivant'}
             </Text>
           </TouchableOpacity>
         </View>

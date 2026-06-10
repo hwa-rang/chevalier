@@ -26,7 +26,7 @@ export function makeInventoryItem(shopItem: ShopItem): Item {
 }
 
 export const SHOP_ITEMS: ShopItem[] = [
-  // WEAPONS — age 16+, reputation ≥ 20, honor ≥ 10
+  // WEAPONS — age 16+, reputation ≥ 20 (bow: ≥ 10)
   {
     catalogId: 'long_sword',
     name: 'Épée longue',
@@ -34,7 +34,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     subtype: 'long_sword',
     price: 80,
     description: 'Lame à deux mains, symbole de noblesse.',
-    requirements: { minAge: 16, minReputation: 20, minHonor: 10 },
+    requirements: { minAge: 16, minReputation: 20 },
   },
   {
     catalogId: 'lance',
@@ -43,7 +43,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     subtype: 'lance',
     price: 40,
     description: 'Arme de joute et de charge cavalière.',
-    requirements: { minAge: 16, minReputation: 20, minHonor: 10 },
+    requirements: { minAge: 16, minReputation: 20 },
   },
   {
     catalogId: 'axe',
@@ -52,7 +52,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     subtype: 'axe',
     price: 35,
     description: 'Arme brutale, redoutable au combat rapproché.',
-    requirements: { minAge: 16, minReputation: 20, minHonor: 10 },
+    requirements: { minAge: 16, minReputation: 20 },
   },
   {
     catalogId: 'mace',
@@ -61,7 +61,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     subtype: 'mace',
     price: 50,
     description: 'Arme lourde, efficace contre les armures.',
-    requirements: { minAge: 16, minReputation: 20, minHonor: 10 },
+    requirements: { minAge: 16, minReputation: 20 },
   },
   {
     catalogId: 'bow',
@@ -70,7 +70,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     subtype: 'bow',
     price: 30,
     description: "Arme de tir à distance, nécessite entraînement.",
-    requirements: { minAge: 16, minReputation: 20, minHonor: 10 },
+    requirements: { minAge: 16, minReputation: 10 },
   },
   {
     catalogId: 'bardiche',
@@ -79,7 +79,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     subtype: 'bardiche',
     price: 80,
     description: "Longue hache d'hast à deux mains.",
-    requirements: { minAge: 16, minReputation: 20, minHonor: 10 },
+    requirements: { minAge: 16, minReputation: 20 },
   },
 
   // ARMOR — no restrictions
@@ -90,6 +90,14 @@ export const SHOP_ITEMS: ShopItem[] = [
     subtype: 'helmet_nasal',
     price: 25,
     description: 'Casque léger avec protège-nez.',
+  },
+  {
+    catalogId: 'helmet_chapel',
+    name: 'Chapel de fer',
+    category: 'armor',
+    subtype: 'helmet_chapel',
+    price: 18,
+    description: 'Le casque à larges bords du soldat du commun.',
   },
   {
     catalogId: 'gauntlets',

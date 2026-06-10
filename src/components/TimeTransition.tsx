@@ -4,7 +4,7 @@ import { Fonts } from '../theme/fonts';
 import { useGameStore } from '../store/gameStore';
 import { navigationRef } from '../navigation/navigationRef';
 
-type Active = { kind: 'month' | 'year'; fromYear: number; toYear: number };
+type Active = { kind: 'month' | 'year' | 'death'; fromYear: number; toYear: number };
 
 /**
  * Global fade-to-black overlay played whenever time advances.
@@ -31,17 +31,22 @@ export default function TimeTransition() {
     swap.setValue(0);
 
     const isYear = transition.kind === 'year';
+    const isDeath = transition.kind === 'death';
 
     Animated.timing(opacity, {
       toValue: 1,
-      duration: 420,
+      duration: isDeath ? 900 : 420,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start(() => {
-      // Fully black — move to the character sheet behind the curtain.
-      if (navigationRef.isReady()) navigationRef.navigate('Character');
+      // Fully black — move behind the curtain (legend screen on death).
+      if (navigationRef.isReady()) {
+        navigationRef.navigate(isDeath ? 'Legend' : 'Character');
+      }
 
-      const middle = isYear
+      const middle = isDeath
+        ? Animated.delay(2000)
+        : isYear
         ? Animated.sequence([
             Animated.delay(450),
             Animated.timing(swap, {
@@ -78,7 +83,12 @@ export default function TimeTransition() {
 
   return (
     <Animated.View style={[styles.overlay, { opacity }]} pointerEvents="auto">
-      {isYear ? (
+      {active.kind === 'death' ? (
+        <View style={styles.center}>
+          <Text style={styles.label}>An {active.toYear}</Text>
+          <Text style={styles.phrase}>Votre histoire s'achève…</Text>
+        </View>
+      ) : isYear ? (
         <View style={styles.center}>
           <Text style={styles.label}>L'année passe…</Text>
           <View style={styles.yearWrap}>
@@ -134,11 +144,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   phrase: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 30,
-    fontWeight: '700',
+    fontFamily: Fonts.title,
+    fontSize: 36,
     color: '#F5EDD6',
     letterSpacing: 2,
-    fontStyle: 'italic',
   },
 });

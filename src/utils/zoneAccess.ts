@@ -22,6 +22,7 @@ export interface ZoneAccess {
  */
 export function getZoneAccess(player: Player, zone: string): ZoneAccess {
   const rep = player.prestige.reputation;
+  const flags = player.flags ?? [];
 
   if (zone === 'guardhouse' || zone === 'bailiff') {
     if (rep < LAW_ZONE_REP_FLOOR) {
@@ -30,7 +31,17 @@ export function getZoneAccess(player: Player, zone: string): ZoneAccess {
     return { forbidden: false };
   }
 
+  if (zone === 'temple') {
+    if (flags.includes('renounced_old_gods')) {
+      return { forbidden: true, reason: 'Vous avez abjuré les anciens dieux devant la paroisse.' };
+    }
+    return { forbidden: false };
+  }
+
   if (zone === 'church') {
+    if (flags.includes('pagan_path')) {
+      return { forbidden: true, reason: "Excommunié : vous avez choisi les anciens cultes." };
+    }
     if ((player.templeVisits ?? 0) >= TEMPLE_EXCOMMUNICATION_THRESHOLD) {
       return { forbidden: true, reason: 'Vos dévotions païennes vous ont valu une excommunication.' };
     }

@@ -140,6 +140,42 @@ export interface Player {
   /** Hair colour for the sprite (brun / blond). */
   hair: Hair;
   background: Background;
+  /** Chosen life ambition (see data/ambitions.ts). */
+  ambition: string;
+  /** True once the character has died — the run is over (see LegendScreen). */
+  isDead?: boolean;
+  /** Short human-readable cause shown on the legend screen. */
+  deathCause?: string;
+  /** Persistent story flags set by pivotal choices (dilemmas, quests). */
+  flags?: string[];
+  /** Currently accepted contract (one at a time — see data/quests.ts). */
+  activeQuest?: {
+    id: string;
+    /** Absolute month (year*12+month) when the quest was accepted. */
+    startAbsMonth: number;
+    /** Snapshot of the tracked metric at acceptance (wins, gold, …). */
+    baseline: number;
+  } | null;
+  /** Bandit camps cleared on the Europe map (quest tracking). */
+  banditsDefeated?: number;
+  /** Random events seen this calendar year (min-3-per-year pacing). */
+  eventsThisYear?: number;
+  /** Currently displayed epithet (see data/titles.ts). */
+  title?: string;
+  /** All earned epithet ids. */
+  unlockedTitles?: string[];
+  /** Behaviour counters driving title unlocks. */
+  counters?: {
+    /** Church actions this month / consecutive months with ≥2 / this year. */
+    churchMonth: number;
+    churchStreak: number;
+    churchYear: number;
+    /** Hunts this month / consecutive months with ≥2. */
+    huntMonth: number;
+    huntStreak: number;
+    /** Lifetime forge + craftsman jobs. */
+    craftJobs: number;
+  };
   /** The player is Christian by default. */
   religion: Religion;
   gold: number;

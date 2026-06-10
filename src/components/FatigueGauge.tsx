@@ -32,6 +32,24 @@ export default function FatigueGauge({ used }: { used: number }) {
   );
 }
 
+/** Red health bar (current / max HP). */
+export function HealthGauge({ health, maxHealth }: { health: number; maxHealth: number }) {
+  const max = Math.max(1, maxHealth);
+  const hp = Math.max(0, Math.min(max, health));
+  const pct = (hp / max) * 100;
+  return (
+    <View style={styles.wrap}>
+      <Text style={styles.label}>Vie</Text>
+      <View style={styles.track}>
+        <View style={[styles.fill, { width: `${pct}%` as any, backgroundColor: '#C0392B' }]} />
+      </View>
+      <Text style={[styles.state, hp <= max * 0.3 && styles.exhausted]}>
+        {hp}/{max}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',

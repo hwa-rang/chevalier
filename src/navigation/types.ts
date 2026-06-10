@@ -14,6 +14,7 @@ export type RootStackParamList = {
   Tournament: { tournamentId: string };
   VillageMap: undefined;
   EuropeMap: undefined;
+  Legend: undefined;
 };
 
 export type MainMenuScreenProps = NativeStackScreenProps<RootStackParamList, 'MainMenu'>;

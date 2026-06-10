@@ -8,7 +8,7 @@ import { Fonts } from '../theme/fonts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Intro'>;
 
-const NARRATIVE = `An de grâce 1314.
+const NARRATIVE = `An de grâce 1312.
 
 L'Europe vacille entre l'or et le sang. Les cendres de l'Ordre du Temple fument encore sur les bûchers, les grands seigneurs aiguisent leurs ambitions dans l'ombre des donjons, et l'on murmure déjà que de mauvaises récoltes s'annoncent — que la faim viendra frapper aux portes avant que les neiges ne fondent.
 

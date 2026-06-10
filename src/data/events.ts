@@ -9,8 +9,16 @@ export interface EventOutcome {
   historyText: string;
   /** Adjusts the score of the first matching relation of this type */
   relationDelta?: { relationType: RelationType; amount: number };
+  /** Find-or-create a recurring NPC (by npcRole) and nudge their score. */
+  ensureNpc?: { role: string; profession: string; scoreDelta: number };
   /** When true, sets player.activePlague = true for the year */
   setActivePlague?: boolean;
+  /** Persistent story flags raised by this choice (dilemmas/quests). */
+  setFlags?: string[];
+  /** Health LOST by this choice (does not touch maxHealth). 0 HP = death. */
+  healthDamage?: number;
+  /** Accepts the quest with this id (see data/quests.ts). */
+  acceptQuest?: string;
 }
 
 export interface GameEvent {
@@ -29,8 +37,23 @@ export interface GameEvent {
     requiresItem?: string; // matches item.subtype
     requiresRelationType?: string; // RelationType value
     minSkill?: { skill: string; value: number }; // e.g. 'combatSkills.longSword'
+    /** Player must have this story flag. */
+    requiredFlag?: string;
+    /** Player must NOT have these story flags (used to make dilemmas one-time). */
+    forbiddenFlag?: string | string[];
+    /** Only eligible when no contract is currently active. */
+    noActiveQuest?: boolean;
+    /** Calendar-year window (e.g. the 1315 famine). */
+    minYear?: number;
+    maxYear?: number;
+    /** Minimum cumulative pagan-temple visits. */
+    minTempleVisits?: number;
+    /** Requires an npc with this role among relations. */
+    requiresNpcRole?: string;
   };
   outcomes: EventOutcome[];
+  /** Priority events preempt the normal random pick when eligible (famine…). */
+  priority?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -463,6 +486,7 @@ export const MONTHLY_EVENTS: GameEvent[] = [
           ridingSkills: { animalHandling: 1 },
           prestige: { reputation: 1 },
         },
+        ensureNpc: { role: 'noble', profession: 'le noble', scoreDelta: 8 },
         historyText:
           "Vous rattrapez l'animal. Le jeune noble, soulagé, vous remercie chaleureusement.",
       },
@@ -1083,6 +1107,157 @@ export const MONTHLY_EVENTS: GameEvent[] = [
       },
     ],
   },
+
+  // ── DILEMMES (uniques — chaque issue pose un drapeau durable) ───────────────
+
+  {
+    id: 'dilemma_purse',
+    type: 'monthly',
+    title: 'La bourse perdue',
+    description:
+      "Sur le chemin du marché, vous trouvez une bourse bien garnie. Elle porte le sceau du marchand — il ne s'en est pas encore aperçu.",
+    conditions: { forbiddenFlag: 'dilemma_purse_done' },
+    outcomes: [
+      {
+        label: 'La rendre au marchand',
+        statDelta: { prestige: { honor: 3, reputation: 2 } },
+        ensureNpc: { role: 'merchant', profession: 'le marchand', scoreDelta: 15 },
+        setFlags: ['dilemma_purse_done'],
+        historyText:
+          'Vous rendez la bourse. Le marchand, stupéfait, jure de ne jamais l\'oublier.',
+      },
+      {
+        label: 'La garder discrètement',
+        goldDelta: 25,
+        statDelta: { prestige: { honor: -4 } },
+        setFlags: ['dilemma_purse_done', 'kept_purse'],
+        historyText:
+          "Personne n'a rien vu. L'or pèse dans votre poche — et un peu sur votre conscience.",
+      },
+    ],
+  },
+  {
+    id: 'dilemma_false_witness',
+    type: 'monthly',
+    title: 'Le faux témoignage',
+    description:
+      "Un ami est accusé de braconnage devant le bailli. Il vous supplie de jurer qu'il était avec vous ce jour-là. C'est faux.",
+    conditions: { requiresRelationType: 'friend', forbiddenFlag: 'dilemma_witness_done' },
+    outcomes: [
+      {
+        label: 'Mentir pour le sauver',
+        statDelta: { prestige: { honor: -6 } },
+        relationDelta: { relationType: 'friend', amount: 18 },
+        setFlags: ['dilemma_witness_done', 'perjurer'],
+        historyText:
+          'Votre serment le sauve. Mais vous avez juré faux devant Dieu et la loi.',
+      },
+      {
+        label: 'Dire la vérité',
+        statDelta: { prestige: { honor: 4, reputation: 2 } },
+        relationDelta: { relationType: 'friend', amount: -20 },
+        setFlags: ['dilemma_witness_done'],
+        historyText:
+          "Vous refusez de mentir. Votre ami paie l'amende — et ne vous regarde plus pareil.",
+      },
+    ],
+  },
+
+  // ── MALADIE (risque) ────────────────────────────────────────────────────────
+
+  {
+    id: 'monthly_fever',
+    type: 'monthly',
+    title: 'Une mauvaise fièvre',
+    description:
+      "Depuis quelques jours, la fièvre vous brûle le front et vos forces déclinent. Les remèdes du barbier coûtent cher.",
+    outcomes: [
+      {
+        label: 'Payer le barbier (15 or)',
+        goldDelta: -15,
+        healthDamage: 3,
+        historyText: 'Saignées et décoctions : la fièvre cède en quelques jours.',
+      },
+      {
+        label: 'Se soigner soi-même (Médecine)',
+        statDelta: { knowledgeSkills: { medicine: 2 } },
+        healthDamage: 8,
+        historyText:
+          'Vous préparez vos propres remèdes. La fièvre dure, mais vous en tirez des leçons.',
+      },
+      {
+        label: 'Serrer les dents',
+        healthDamage: 15,
+        statDelta: { physicalStats: { endurance: -1 } },
+        historyText: 'La fièvre vous ronge des semaines durant avant de relâcher son étreinte.',
+      },
+    ],
+  },
+
+  // ── LES ANNÉES NOIRES (1315–1317) — misère récurrente de la Grande Famine ──
+
+  {
+    id: 'famine_beggars',
+    type: 'monthly',
+    title: 'Des affamés à votre porte',
+    description:
+      'Une famille décharnée mendie devant chez vous. Les routes du pays se couvrent de meurt-de-faim venus de Flandre et d\'Artois.',
+    conditions: { minYear: 1315, maxYear: 1317 },
+    outcomes: [
+      {
+        label: 'Partager votre pain (5 or)',
+        goldDelta: -5,
+        statDelta: { prestige: { honor: 3, reputation: 2 } },
+        historyText: 'Vous nourrissez ces malheureux. Dieu et le village s\'en souviendront.',
+      },
+      {
+        label: 'Fermer votre porte',
+        statDelta: { prestige: { reputation: -2 } },
+        historyText: 'Vous détournez les yeux. Chacun sa croix, en ces années noires.',
+      },
+    ],
+  },
+  {
+    id: 'famine_grain_thieves',
+    type: 'monthly',
+    title: 'Voleurs de grain',
+    description:
+      'La nuit, des ombres rôdent autour des réserves. La faim fait des voleurs de tout le monde.',
+    conditions: { minYear: 1315, maxYear: 1317 },
+    outcomes: [
+      {
+        label: 'Monter la garde et les chasser',
+        healthDamage: 5,
+        statDelta: { prestige: { reputation: 2 }, physicalStats: { endurance: 1 } },
+        historyText: 'Vous les mettez en fuite après une échauffourée. Quelques bleus, rien de plus.',
+      },
+      {
+        label: 'Laisser faire',
+        goldDelta: -8,
+        historyText: 'Au matin, une partie de vos réserves a disparu.',
+      },
+    ],
+  },
+  {
+    id: 'famine_bread_price',
+    type: 'monthly',
+    title: 'Le prix du pain',
+    description:
+      "Le boulanger affiche des prix fous : le setier de blé vaut dix fois son prix d'avant les pluies.",
+    conditions: { minYear: 1315, maxYear: 1317 },
+    outcomes: [
+      {
+        label: 'Payer sans broncher (8 or)',
+        goldDelta: -8,
+        historyText: 'Votre bourse se vide pour un pain gris et dur.',
+      },
+      {
+        label: 'Se priver encore',
+        healthDamage: 6,
+        historyText: 'Le ventre creux, vous tenez bon. Combien de temps encore ?',
+      },
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1315,6 +1490,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
       {
         label: 'Se présenter dignement',
         statDelta: { prestige: { reputation: 1 } },
+        ensureNpc: { role: 'noble', profession: 'le noble', scoreDelta: 6 },
         historyText:
           'Le noble remarque votre maintien et demande votre nom. Un contact précieux.',
       },
@@ -1322,6 +1498,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         label: 'Offrir un présent rare',
         goldDelta: -20,
         statDelta: { prestige: { reputation: 2, glory: 1 } },
+        ensureNpc: { role: 'noble', profession: 'le noble', scoreDelta: 12 },
         historyText:
           "Votre cadeau impressionne le seigneur. Il s'en souviendra.",
       },
@@ -1672,6 +1849,308 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         statDelta: { prestige: { reputation: -2 } },
         historyText:
           "Vous vous esquivez. Mais les gens remarquent. Il reviendra sûrement.",
+      },
+    ],
+  },
+
+  // ── DILEMMES ANNUELS (uniques, conséquences durables) ───────────────────────
+
+  {
+    id: 'dilemma_faith',
+    type: 'annual',
+    title: "L'ultimatum du prêtre",
+    description:
+      "Le prêtre vous prend à part, le regard dur : « On murmure que vous fréquentez le sanctuaire païen. Renoncez aux anciens dieux devant la paroisse — ou l'Église vous fermera ses portes à jamais. »",
+    conditions: { minTempleVisits: 2, forbiddenFlag: 'dilemma_faith_done' },
+    outcomes: [
+      {
+        label: 'Renoncer aux anciens dieux',
+        statDelta: { prestige: { honor: 2, reputation: 3 } },
+        relationDelta: { relationType: 'priest', amount: 15 },
+        setFlags: ['dilemma_faith_done', 'renounced_old_gods'],
+        historyText:
+          "Vous abjurez publiquement. L'Église vous ouvre les bras — le sanctuaire vous est désormais interdit.",
+      },
+      {
+        label: 'Rester fidèle aux anciens cultes',
+        statDelta: { knowledgeSkills: { apocryphal: 4 } },
+        relationDelta: { relationType: 'priest', amount: -25 },
+        setFlags: ['dilemma_faith_done', 'pagan_path'],
+        historyText:
+          "Vous refusez d'abjurer. Le prêtre vous excommunie sur-le-champ : l'église vous est fermée, mais les anciens dieux vous reconnaissent.",
+      },
+    ],
+  },
+  {
+    id: 'dilemma_lord_oath',
+    type: 'annual',
+    title: 'Le serment du seigneur',
+    description:
+      "Le seigneur local vous convoque à son manoir : « J'ai besoin d'hommes sûrs. Jure-moi fidélité, et tu mangeras à ma table. Refuse, et reste un sans-maître. »",
+    conditions: { minAge: 17, minReputation: 10, forbiddenFlag: 'dilemma_lord_done' },
+    outcomes: [
+      {
+        label: 'Jurer fidélité',
+        statDelta: { prestige: { reputation: 5, honor: 3 } },
+        ensureNpc: { role: 'noble', profession: 'le seigneur', scoreDelta: 15 },
+        setFlags: ['dilemma_lord_done', 'sworn_to_lord'],
+        historyText:
+          'Un genou à terre, vous prêtez serment. Vous êtes désormais homme lige du seigneur.',
+      },
+      {
+        label: 'Garder votre liberté',
+        statDelta: { prestige: { glory: 2 } },
+        ensureNpc: { role: 'noble', profession: 'le seigneur', scoreDelta: -8 },
+        setFlags: ['dilemma_lord_done', 'free_blade'],
+        historyText:
+          "Vous déclinez avec respect. Le seigneur plisse les yeux — les lames libres ne font pas de vieux os, dit-on.",
+      },
+    ],
+  },
+
+  // ── LA GRANDE FAMINE DE 1315 (priorité historique) ──────────────────────────
+
+  {
+    id: 'famine_1315',
+    type: 'annual',
+    priority: true,
+    title: 'La Grande Famine',
+    description:
+      "L'an 1315 restera maudit : des pluies sans fin ont pourri les récoltes dans toute l'Europe. Le grain vaut de l'or, et la faim s'installe au village.",
+    conditions: { minYear: 1315, maxYear: 1315, forbiddenFlag: 'famine_1315_done' },
+    outcomes: [
+      {
+        label: 'Acheter du grain à prix d\'or (40 or)',
+        goldDelta: -40,
+        setFlags: ['famine_1315_done'],
+        historyText:
+          'Votre bourse fond, mais votre table reste garnie pendant que d\'autres maigrissent.',
+      },
+      {
+        label: 'Se serrer la ceinture',
+        healthDamage: 20,
+        statDelta: { physicalStats: { strength: -2, endurance: -2 } },
+        setFlags: ['famine_1315_done'],
+        historyText:
+          "L'hiver est long et le ventre vide. Vous survivez, amaigri et affaibli.",
+      },
+      {
+        label: 'Piller le grenier seigneurial',
+        goldDelta: 10,
+        statDelta: { prestige: { honor: -8, reputation: -6 } },
+        setFlags: ['famine_1315_done', 'granary_thief'],
+        healthDamage: 5,
+        historyText:
+          'Vous mangez à votre faim — avec le pain volé des affamés. On chuchote votre nom.',
+      },
+    ],
+  },
+  {
+    id: 'famine_1316',
+    type: 'annual',
+    priority: true,
+    title: 'La famine persiste',
+    description:
+      "1316 n'apporte aucun répit : les semailles ont encore pourri. Les routes se couvrent de mendiants et l'on enterre les faibles.",
+    conditions: { minYear: 1316, maxYear: 1316, forbiddenFlag: 'famine_1316_done' },
+    outcomes: [
+      {
+        label: 'Partager vos réserves avec le village (20 or)',
+        goldDelta: -20,
+        statDelta: { prestige: { honor: 5, reputation: 5 } },
+        setFlags: ['famine_1316_done'],
+        historyText:
+          'Votre générosité dans la disette ne sera pas oubliée de sitôt.',
+      },
+      {
+        label: 'Ne penser qu\'aux vôtres',
+        healthDamage: 10,
+        setFlags: ['famine_1316_done'],
+        historyText:
+          'Chacun pour soi en ces temps maudits. Votre famille survit, votre corps s\'use.',
+      },
+    ],
+  },
+  {
+    id: 'famine_1317',
+    type: 'annual',
+    priority: true,
+    title: 'Le pic de la faim',
+    description:
+      "Troisième année de disette. Au printemps 1317, la mort fauche large : on dit qu'un homme sur dix a péri entre la Flandre et le Rhin. Les granges sont vides, les cimetières pleins.",
+    conditions: { minYear: 1317, maxYear: 1317, forbiddenFlag: 'famine_1317_done' },
+    outcomes: [
+      {
+        label: 'Vendre un bien pour manger',
+        goldDelta: -30,
+        setFlags: ['famine_1317_done'],
+        historyText: 'Vous bradez ce que vous pouvez. Survivre n\'a pas de prix.',
+      },
+      {
+        label: 'Chasser et glaner sans relâche',
+        healthDamage: 12,
+        statDelta: { physicalStats: { endurance: 2 }, combatSkills: { archery: 1 } },
+        setFlags: ['famine_1317_done'],
+        historyText: 'Racines, gibier maigre, pain d\'écorce : vous tenez, épuisé mais vivant.',
+      },
+    ],
+  },
+
+  // ── CHRONIQUES HISTORIQUES (Flandre, Liège, nord du royaume) ────────────────
+
+  {
+    id: 'hist_1313_liege',
+    type: 'annual',
+    priority: true,
+    title: 'Les cendres de Liège',
+    description:
+      "Les colporteurs racontent le Mal Saint-Martin : à Liège, le petit peuple a enfermé des centaines de patriciens dans l'église Saint-Martin — et y a mis le feu. La cité du prince-évêque est à sang.",
+    conditions: { minYear: 1312, maxYear: 1313, forbiddenFlag: 'hist_1313_done' },
+    outcomes: [
+      {
+        label: 'Écouter les récits à la taverne',
+        statDelta: { knowledgeSkills: { generalCulture: 2, strategy: 1 } },
+        setFlags: ['hist_1313_done'],
+        historyText: 'Les récits de Liège vous apprennent ce que vaut la colère du peuple.',
+      },
+      {
+        label: 'Prier pour les âmes brûlées',
+        statDelta: { knowledgeSkills: { religion: 2 }, prestige: { honor: 1 } },
+        setFlags: ['hist_1313_done'],
+        historyText: 'Vous faites dire une prière pour les morts de Saint-Martin.',
+      },
+    ],
+  },
+  {
+    id: 'hist_1314_temple',
+    type: 'annual',
+    priority: true,
+    title: 'La malédiction du Temple',
+    description:
+      "Nouvelles de Paris : Jacques de Molay, grand maître du Temple, est monté sur le bûcher en maudissant le roi et le pape. Et voilà qu'avant l'hiver, Philippe le Bel est mort à la chasse. Le royaume frissonne.",
+    conditions: { minYear: 1314, maxYear: 1314, forbiddenFlag: 'hist_1314_done' },
+    outcomes: [
+      {
+        label: 'Y voir un signe des anciens dieux',
+        statDelta: { knowledgeSkills: { apocryphal: 3 } },
+        setFlags: ['hist_1314_done'],
+        historyText: 'La malédiction du Temple vous trouble : il est des puissances que l\'Église ignore.',
+      },
+      {
+        label: 'Se signer et passer son chemin',
+        statDelta: { knowledgeSkills: { religion: 2 } },
+        setFlags: ['hist_1314_done'],
+        historyText: 'Dieu seul juge les rois. Vous redoublez de piété.',
+      },
+      {
+        label: 'Étudier la chute des puissants',
+        statDelta: { knowledgeSkills: { strategy: 2, generalCulture: 1 } },
+        setFlags: ['hist_1314_done'],
+        historyText: 'Roi, pape, grand maître : nul n\'est intouchable. Leçon retenue.',
+      },
+    ],
+  },
+  {
+    id: 'hist_1316_kings',
+    type: 'annual',
+    priority: true,
+    title: 'Deux rois en un an',
+    description:
+      "Le royaume vacille : Louis le Hutin est mort en juin, et son fils posthume, le petit roi Jean, n'a vécu que cinq jours en novembre. Deux rois portés en terre la même année — les mauvais présages s'accumulent.",
+    conditions: { minYear: 1316, maxYear: 1317, forbiddenFlag: 'hist_1316_done' },
+    outcomes: [
+      {
+        label: 'Craindre pour le royaume',
+        statDelta: { knowledgeSkills: { generalCulture: 2 } },
+        setFlags: ['hist_1316_done'],
+        historyText: 'Un trône sans héritier, une famine sans fin : sale époque pour le royaume.',
+      },
+      {
+        label: 'Y flairer des opportunités',
+        statDelta: { knowledgeSkills: { strategy: 2, eloquence: 1 } },
+        setFlags: ['hist_1316_done'],
+        historyText: 'Quand les grands se déchirent, les petits peuvent monter. Vous ouvrez l\'œil.',
+      },
+    ],
+  },
+  {
+    id: 'hist_1320_pastoureaux',
+    type: 'annual',
+    priority: true,
+    title: 'Les Pastoureaux',
+    description:
+      "Une croisade de gueux déferle du nord : bergers et va-nu-pieds par milliers, pillant celliers et bourgs sur leur passage. Leur colonne approche de la région.",
+    conditions: { minYear: 1320, maxYear: 1320, forbiddenFlag: 'hist_1320_done' },
+    outcomes: [
+      {
+        label: 'Défendre le village',
+        healthDamage: 10,
+        statDelta: { prestige: { reputation: 4, glory: 2 }, combatSkills: { swordAndShield: 1 } },
+        setFlags: ['hist_1320_done'],
+        historyText: 'Vous tenez la barricade avec les hommes du village. Les Pastoureaux passent au large.',
+      },
+      {
+        label: 'Cacher vivres et famille',
+        goldDelta: -10,
+        setFlags: ['hist_1320_done'],
+        historyText: 'Vous enterrez vos biens et attendez que la horde passe. Elle pille ce qui traîne.',
+      },
+    ],
+  },
+  {
+    id: 'hist_1321_lepers',
+    type: 'annual',
+    priority: true,
+    title: 'La rumeur des lépreux',
+    description:
+      "Une rumeur folle embrase le pays : les lépreux auraient empoisonné puits et fontaines. Partout, des léproseries brûlent et des innocents périssent.",
+    conditions: { minYear: 1321, maxYear: 1321, forbiddenFlag: 'hist_1321_done' },
+    outcomes: [
+      {
+        label: 'Défendre les innocents',
+        statDelta: { prestige: { honor: 5, reputation: -3 } },
+        setFlags: ['hist_1321_done'],
+        historyText: 'Vous vous dressez contre la foule. On vous traite d\'ami des pestiférés — mais des vies sont sauves.',
+      },
+      {
+        label: 'Hurler avec les loups',
+        statDelta: { prestige: { honor: -5, reputation: 2 } },
+        setFlags: ['hist_1321_done'],
+        historyText: 'Vous suivez la foule vengeresse. Plus tard, la honte vous mordra.',
+      },
+      {
+        label: 'Ne pas s\'en mêler',
+        setFlags: ['hist_1321_done'],
+        historyText: 'Vous fermez votre porte à la folie du monde.',
+      },
+    ],
+  },
+  {
+    id: 'hist_1323_flanders',
+    type: 'annual',
+    priority: true,
+    title: 'La Flandre se soulève',
+    description:
+      "Des nouvelles du nord : les paysans de Flandre maritime ont pris les armes contre comte et dîmes. La révolte gagne bourg après bourg — la guerre couve aux portes de la région.",
+    conditions: { minYear: 1323, maxYear: 1328, forbiddenFlag: 'hist_1323_done' },
+    outcomes: [
+      {
+        label: 'Vendre vivres et matériel aux deux camps',
+        goldDelta: 30,
+        statDelta: { prestige: { honor: -3 } },
+        setFlags: ['hist_1323_done'],
+        historyText: 'La guerre des autres fait votre beurre. Peu glorieux, fort lucratif.',
+      },
+      {
+        label: 'Soutenir les insurgés',
+        statDelta: { prestige: { honor: 2, reputation: -4 }, knowledgeSkills: { strategy: 2 } },
+        setFlags: ['hist_1323_done'],
+        historyText: 'Votre cœur penche pour les karls de Flandre. Les autorités vous regardent de travers.',
+      },
+      {
+        label: 'Rester loin des troubles',
+        setFlags: ['hist_1323_done'],
+        historyText: 'La Flandre brûle ; vous gardez la tête baissée.',
       },
     ],
   },

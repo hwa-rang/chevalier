@@ -16,6 +16,7 @@ import TournamentListScreen from '../screens/TournamentListScreen';
 import TournamentScreen from '../screens/TournamentScreen';
 import VillageMapScreen from '../screens/VillageMapScreen';
 import EuropeMapScreen from '../screens/EuropeMapScreen';
+import LegendScreen from '../screens/LegendScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -36,6 +37,7 @@ export default function RootNavigator() {
         <Stack.Screen name="Tournament" component={TournamentScreen} />
         <Stack.Screen name="VillageMap" component={VillageMapScreen} />
         <Stack.Screen name="EuropeMap" component={EuropeMapScreen} />
+        <Stack.Screen name="Legend" component={LegendScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
