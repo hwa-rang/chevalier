@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Image,
   ScrollView,
@@ -6,11 +6,12 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from 'react-native';
+import { Fonts } from '../theme/fonts';
+import PixelBubble from './PixelBubble';
 import type { PointOfInterest } from './PixelMap';
 
-// Original SVG/PNG dimensions
+// Original PNG dimensions
 const MAP_W = 432;
 const MAP_H = 768;
 
@@ -20,16 +21,25 @@ interface Props {
 }
 
 export default function ImageMap({ pois, onPoiPress }: Props) {
-  const { width } = useWindowDimensions();
+  // Measure the actual available width rather than trusting window dimensions
+  // (avoids the map overflowing on the right on some devices).
+  const [boxW, setBoxW] = useState(0);
+  const width = boxW;
   const scale = width / MAP_W;
   const displayH = MAP_H * scale;
 
   return (
     <ScrollView
+      style={styles.scroll}
       showsVerticalScrollIndicator={false}
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        if (w && Math.abs(w - boxW) > 0.5) setBoxW(w);
+      }}
       contentContainerStyle={{ width, height: displayH }}
     >
-      <View style={{ width, height: displayH }}>
+      {width > 0 && (
+      <View style={{ width, height: displayH, overflow: 'hidden' }}>
         {/* Village map background */}
         <Image
           // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -51,14 +61,8 @@ export default function ImageMap({ pois, onPoiPress }: Props) {
               onPress={() => onPoiPress(poi)}
               activeOpacity={0.75}
             >
-              <View
-                style={[
-                  styles.poiCircle,
-                  { backgroundColor: color },
-                  poi.locked && styles.poiCircleLocked,
-                ]}
-              >
-                <Text style={styles.poiIcon}>{poi.icon}</Text>
+              <View style={poi.locked ? styles.bubbleLocked : undefined}>
+                <PixelBubble color={color} size={30} />
               </View>
               <View style={styles.labelWrap}>
                 <Text
@@ -72,47 +76,34 @@ export default function ImageMap({ pois, onPoiPress }: Props) {
           );
         })}
       </View>
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+    alignSelf: 'stretch',
+  },
   poiBtn: {
     position: 'absolute',
     alignItems: 'center',
     width: 40,
   },
-  poiCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
-    elevation: 4,
-  },
-  poiCircleLocked: {
-    opacity: 0.55,
-  },
-  poiIcon: {
-    fontSize: 15,
-    lineHeight: 18,
+  bubbleLocked: {
+    opacity: 0.5,
   },
   labelWrap: {
     backgroundColor: 'rgba(0,0,0,0.60)',
-    borderRadius: 3,
+    borderRadius: 0,
     paddingHorizontal: 3,
     paddingVertical: 1,
     marginTop: 2,
     maxWidth: 48,
   },
   poiLabel: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 7,
     color: '#fff',
     fontWeight: '700',

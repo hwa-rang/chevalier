@@ -1,18 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Dimensions,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { Colors } from '../theme/colors';
-
-const SCREEN_H = Dimensions.get('window').height;
-const SHEET_H = Math.round(SCREEN_H * 0.48);
+import { Fonts } from '../theme/fonts';
 
 interface Props {
   visible: boolean;
@@ -22,13 +20,17 @@ interface Props {
 }
 
 export default function BottomSheet({ visible, onClose, title, children }: Props) {
+  const { height } = useWindowDimensions();
+  // Real height via the hook (module-level Dimensions is unreliable at startup).
+  const sheetH = Math.max(320, Math.round(height * 0.5));
+
   const [modalVisible, setModalVisible] = useState(false);
-  const translateY = useRef(new Animated.Value(SHEET_H)).current;
+  const translateY = useRef(new Animated.Value(sheetH)).current;
 
   useEffect(() => {
     if (visible) {
       setModalVisible(true);
-      translateY.setValue(SHEET_H);
+      translateY.setValue(sheetH);
       Animated.spring(translateY, {
         toValue: 0,
         useNativeDriver: true,
@@ -37,7 +39,7 @@ export default function BottomSheet({ visible, onClose, title, children }: Props
       }).start();
     } else {
       Animated.spring(translateY, {
-        toValue: SHEET_H,
+        toValue: sheetH,
         useNativeDriver: true,
         tension: 70,
         friction: 12,
@@ -61,7 +63,7 @@ export default function BottomSheet({ visible, onClose, title, children }: Props
       <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
 
       {/* Sheet */}
-      <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
+      <Animated.View style={[styles.sheet, { height: sheetH, transform: [{ translateY }] }]}>
         {/* Pill handle */}
         <View style={styles.handle} />
 
@@ -90,10 +92,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: SHEET_H,
     backgroundColor: Colors.parchment,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
     borderTopWidth: 2,
     borderLeftWidth: 1,
     borderRightWidth: 1,
@@ -106,14 +107,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 4,
     backgroundColor: Colors.border,
-    borderRadius: 2,
+    borderRadius: 0,
     alignSelf: 'center',
     marginBottom: 10,
   },
   title: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 17,
-    fontWeight: '700',
     color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: 12,

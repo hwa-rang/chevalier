@@ -8,6 +8,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { TournamentScreenProps } from '../navigation/types';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/fonts';
 import { useGameStore } from '../store/gameStore';
 import { TOURNAMENTS } from '../data/tournaments';
 import type { TournamentType } from '../data/tournaments';
@@ -435,31 +436,30 @@ const styles = StyleSheet.create({
   headerLose: { backgroundColor: '#FFEBEE' },
   headerTitle: {
     flex: 1,
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 17,
-    fontWeight: '700',
     color: Colors.textPrimary,
     textAlign: 'center',
   },
   headerSub: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     color: Colors.textSecondary,
   },
   backBtn: { minWidth: 60 },
-  backText: { fontFamily: 'serif', fontSize: 14, color: Colors.accent },
+  backText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.accent },
 
   body: { padding: 16, gap: 14 },
 
   bigName: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 20,
     fontWeight: '700',
     color: Colors.textPrimary,
     textAlign: 'center',
   },
   bigSub: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 14,
     color: Colors.textSecondary,
     fontStyle: 'italic',
@@ -468,19 +468,19 @@ const styles = StyleSheet.create({
 
   infoCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 14,
     gap: 6,
   },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
-  rowLabel: { fontFamily: 'serif', fontSize: 13, color: Colors.textSecondary },
-  rowValue: { fontFamily: 'serif', fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
+  rowLabel: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary },
+  rowValue: { fontFamily: Fonts.bodyBold, fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
   rowNegative: { color: '#C62828' },
 
   warningText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 12,
     color: Colors.textSecondary,
     fontStyle: 'italic',
@@ -489,12 +489,12 @@ const styles = StyleSheet.create({
 
   primaryBtn: {
     backgroundColor: Colors.buttonBg,
-    borderRadius: 10,
+    borderRadius: 0,
     paddingVertical: 14,
     alignItems: 'center',
   },
   primaryBtnText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 15,
     fontWeight: '700',
     color: Colors.buttonText,
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   // Combat round card
   roundCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 16,
@@ -512,28 +512,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   opponentName: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 18,
     fontWeight: '700',
     color: Colors.textPrimary,
     textAlign: 'center',
   },
   opponentSkillLabel: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     color: Colors.textSecondary,
     fontStyle: 'italic',
   },
   rollRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   rollBox: { alignItems: 'center', gap: 4 },
-  rollLabel: { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary },
-  rollValue: { fontFamily: 'serif', fontSize: 32, fontWeight: '700' },
+  rollLabel: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
+  rollValue: { fontFamily: Fonts.bodyBold, fontSize: 32, fontWeight: '700' },
   rollPlayer: { color: '#1565C0' },
   rollOpponent: { color: '#C62828' },
-  rollVs: { fontFamily: 'serif', fontSize: 16, color: Colors.textSecondary },
+  rollVs: { fontFamily: Fonts.body, fontSize: 16, color: Colors.textSecondary },
 
   outcomeBox: {
-    borderRadius: 8,
+    borderRadius: 0,
     paddingHorizontal: 16,
     paddingVertical: 8,
     alignSelf: 'stretch',
@@ -541,10 +541,10 @@ const styles = StyleSheet.create({
   },
   outcomeWin: { backgroundColor: '#E8F5E9' },
   outcomeLose: { backgroundColor: '#FFEBEE' },
-  outcomeText: { fontFamily: 'serif', fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  outcomeText: { fontFamily: Fonts.bodyBold, fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
 
   flavorText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 14,
     color: Colors.textSecondary,
     fontStyle: 'italic',
@@ -553,14 +553,14 @@ const styles = StyleSheet.create({
 
   // Result screen
   resultHero: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 16,
     color: Colors.textPrimary,
     textAlign: 'center',
     fontStyle: 'italic',
   },
   sectionLabel: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 12,
     color: Colors.textSecondary,
     textTransform: 'uppercase',
@@ -568,13 +568,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   summaryRow: {
-    borderRadius: 8,
+    borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 2,
   },
   summaryWin: { backgroundColor: '#E8F5E9' },
   summaryLose: { backgroundColor: '#FFEBEE' },
-  summaryText: { fontFamily: 'serif', fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
-  summaryScore: { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary },
+  summaryText: { fontFamily: Fonts.bodyBold, fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
+  summaryScore: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
 });

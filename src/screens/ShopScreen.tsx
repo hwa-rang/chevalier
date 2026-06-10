@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/fonts';
 import {
   useGameStore,
   ITEM_SELL_PRICE,
@@ -311,20 +312,19 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 22,
-    fontWeight: '700',
     color: Colors.textPrimary,
     letterSpacing: 2,
   },
   goldBadge: {
     backgroundColor: Colors.accent,
-    borderRadius: 12,
+    borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
   goldText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 14,
     fontWeight: '700',
     color: Colors.buttonText,
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.accent,
   },
   modeText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 15,
     color: Colors.textSecondary,
   },
@@ -354,13 +354,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   merchantNote: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 11,
     color: Colors.textSecondary,
     marginTop: 2,
   },
   sellEmpty: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 15,
     color: Colors.textSecondary,
     fontStyle: 'italic',
@@ -382,13 +382,13 @@ const styles = StyleSheet.create({
   tab: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 6,
+    borderRadius: 0,
   },
   tabActive: {
     backgroundColor: Colors.buttonBg,
   },
   tabText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     lineHeight: 18,
     color: Colors.textSecondary,
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 14,
@@ -418,19 +418,19 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   itemName: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 16,
     fontWeight: '700',
     color: Colors.textPrimary,
   },
   itemDescription: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     color: Colors.textSecondary,
     fontStyle: 'italic',
   },
   requirementUnmet: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 12,
     color: '#B22222',
     marginTop: 2,
@@ -441,14 +441,14 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   price: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 15,
     fontWeight: '700',
     color: Colors.accent,
   },
   buyButton: {
     backgroundColor: Colors.buttonBg,
-    borderRadius: 8,
+    borderRadius: 0,
     paddingHorizontal: 14,
     paddingVertical: 7,
   },
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceDark,
   },
   buyButtonText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 13,
     fontWeight: '700',
     color: Colors.buttonText,
@@ -470,13 +470,13 @@ const styles = StyleSheet.create({
     left: 24,
     right: 24,
     backgroundColor: Colors.buttonBg,
-    borderRadius: 10,
+    borderRadius: 0,
     paddingHorizontal: 16,
     paddingVertical: 12,
     alignItems: 'center',
   },
   toastText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 14,
     color: Colors.buttonText,
     textAlign: 'center',

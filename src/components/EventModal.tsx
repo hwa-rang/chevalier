@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/fonts';
 import type { GameEvent } from '../data/events';
 
 interface Props {
@@ -65,7 +66,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.parchment,
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 2,
     borderColor: Colors.border,
     padding: 22,
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   typeLabel: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 11,
     color: Colors.textSecondary,
     textAlign: 'center',
@@ -89,16 +90,15 @@ const styles = StyleSheet.create({
     color: '#8B0000',
   },
   title: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 20,
-    fontWeight: '700',
     color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: 14,
     lineHeight: 26,
   },
   description: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 14,
     color: Colors.textPrimary,
     fontStyle: 'italic',
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   },
   outcomeButton: {
     backgroundColor: Colors.surface,
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     paddingHorizontal: 16,
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   outcomeLabel: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 14,
     fontWeight: '700',
     color: Colors.textPrimary,

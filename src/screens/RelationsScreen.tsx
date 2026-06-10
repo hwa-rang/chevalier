@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/fonts';
 import { useGameStore } from '../store/gameStore';
 import type { Relation, RelationType } from '../types/game';
 
@@ -128,16 +129,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backBtn: { paddingVertical: 4, paddingRight: 8 },
-  backText: { fontFamily: 'serif', fontSize: 14, color: Colors.accent },
+  backText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.accent },
   title: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 18,
-    fontWeight: '700',
     color: Colors.textPrimary,
   },
   content: { padding: 16, gap: 6 },
   groupLabel: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 12,
     color: Colors.textSecondary,
     textTransform: 'uppercase',
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     paddingHorizontal: 14,
@@ -158,44 +158,44 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cardInfo: { flex: 1 },
   cardName: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 15,
     fontWeight: '700',
     color: Colors.textPrimary,
   },
-  cardMeta: { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  cardMeta: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
   interactBtn: {
     backgroundColor: Colors.buttonBg,
-    borderRadius: 6,
+    borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  interactBtnText: { fontFamily: 'serif', fontSize: 12, fontWeight: '700', color: Colors.buttonText },
+  interactBtnText: { fontFamily: Fonts.bodyBold, fontSize: 12, fontWeight: '700', color: Colors.buttonText },
   scoreBarTrack: {
     height: 10,
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 5,
+    borderRadius: 0,
     overflow: 'hidden',
     justifyContent: 'center',
   },
-  scoreBarFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 5 },
+  scoreBarFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 0 },
   scoreBarLabel: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 9,
     color: Colors.textPrimary,
     textAlign: 'center',
     zIndex: 1,
   },
-  empty: { fontFamily: 'serif', fontSize: 14, color: Colors.textSecondary, fontStyle: 'italic', textAlign: 'center', marginTop: 40 },
+  empty: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary, fontStyle: 'italic', textAlign: 'center', marginTop: 40 },
   griefBox: {
     marginTop: 20,
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 14,
     gap: 4,
   },
-  griefTitle: { fontFamily: 'serif', fontSize: 13, fontWeight: '700', color: Colors.textPrimary, marginBottom: 4 },
-  griefItem: { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' },
+  griefTitle: { fontFamily: Fonts.title, fontSize: 13, color: Colors.textPrimary, marginBottom: 4 },
+  griefItem: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' },
 });

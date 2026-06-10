@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { MainMenuScreenProps } from '../navigation/types';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/fonts';
 
 export default function MainMenuScreen({ navigation }: MainMenuScreenProps) {
   const [hasSave, setHasSave] = useState(false);
@@ -76,7 +77,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   era: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 12,
     color: Colors.accent,
     letterSpacing: 3,
@@ -84,11 +85,10 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: {
-    fontFamily: 'serif',
-    fontSize: 68,
+    fontFamily: Fonts.title,
+    fontSize: 72,
     color: Colors.textPrimary,
     letterSpacing: 6,
-    fontWeight: '700',
   },
   divider: {
     width: 72,
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     marginVertical: 18,
   },
   tagline: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 14,
     color: Colors.textSecondary,
     fontStyle: 'italic',
@@ -111,13 +111,13 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: Colors.buttonBg,
     paddingVertical: 16,
-    borderRadius: 3,
+    borderRadius: 0,
     alignItems: 'center',
     minHeight: 52,
     justifyContent: 'center',
   },
   primaryButtonText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 18,
     color: Colors.buttonText,
     letterSpacing: 1,
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     backgroundColor: Colors.surface,
     paddingVertical: 16,
-    borderRadius: 3,
+    borderRadius: 0,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
@@ -133,13 +133,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   secondaryButtonText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 18,
     color: Colors.textPrimary,
     letterSpacing: 1,
   },
   footer: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 11,
     color: Colors.textSecondary,
     letterSpacing: 4,

@@ -41,9 +41,6 @@ export function energyCost(kind: 'principal' | 'secondary'): number {
   return kind === 'principal' ? PRINCIPAL_COST : SECONDARY_COST;
 }
 
-// Legacy display caps (kept for any external reference; gating now uses energy).
-export const MAX_PRINCIPAL_ACTIONS = 1;
-export const MAX_SECONDARY_ACTIONS = 4;
 /** Visiting the same place this many times in a row triggers a streak effect. */
 const STREAK_THRESHOLD = 3;
 

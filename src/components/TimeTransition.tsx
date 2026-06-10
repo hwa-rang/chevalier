@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Fonts } from '../theme/fonts';
 import { useGameStore } from '../store/gameStore';
 import { navigationRef } from '../navigation/navigationRef';
 
@@ -110,7 +111,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   label: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     color: '#C4A35A',
     letterSpacing: 3,
@@ -124,9 +125,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   year: {
-    fontFamily: 'serif',
-    fontSize: 60,
-    fontWeight: '700',
+    fontFamily: Fonts.title,
+    fontSize: 64,
     color: '#F5EDD6',
     letterSpacing: 4,
   },
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   phrase: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 30,
     fontWeight: '700',
     color: '#F5EDD6',

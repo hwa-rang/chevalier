@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/fonts';
 import { ENERGY_CAPACITY } from '../store/gameStore';
 
 /**
@@ -39,14 +40,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   label: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     color: Colors.textSecondary,
   },
   track: {
     flex: 1,
     height: 12,
-    borderRadius: 6,
+    borderRadius: 0,
     backgroundColor: Colors.parchment,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -54,10 +55,10 @@ const styles = StyleSheet.create({
   },
   fill: {
     height: '100%',
-    borderRadius: 6,
+    borderRadius: 0,
   },
   state: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 12,
     fontWeight: '700',
     color: Colors.textSecondary,

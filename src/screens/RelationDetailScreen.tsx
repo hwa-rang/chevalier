@@ -10,13 +10,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/fonts';
 import {
   useGameStore,
   energyUsed,
   energyCost,
   ENERGY_CAPACITY,
 } from '../store/gameStore';
-import FatigueGauge from '../components/FatigueGauge';
 import { canRomance } from '../utils/romanceRules';
 import type { Relation, RelationType, StatDelta } from '../types/game';
 
@@ -403,11 +403,6 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
           )}
         </View>
 
-        {/* Monthly action budget */}
-        <View style={styles.slotInfo}>
-          <FatigueGauge used={energyUsed(player)} />
-        </View>
-
         {/* Feedback banner */}
         {feedback && (
           <View style={styles.feedbackBox}>
@@ -572,46 +567,36 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backBtn: { paddingVertical: 4, paddingRight: 8 },
-  backText: { fontFamily: 'serif', fontSize: 14, color: Colors.accent },
-  headerTitle: { fontFamily: 'serif', fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
+  backText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.accent },
+  headerTitle: { fontFamily: Fonts.title, fontSize: 17, color: Colors.textPrimary },
   content: { padding: 16, gap: 12 },
   profileCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 16,
     gap: 10,
   },
   profileRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  profileName: { fontFamily: 'serif', fontSize: 20, fontWeight: '700', color: Colors.textPrimary },
-  profileMeta: { fontFamily: 'serif', fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
-  profileScore: { fontFamily: 'serif', fontSize: 22, fontWeight: '700', color: Colors.accent },
-  profileSkill: { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' },
-  scoreBarTrack: { height: 12, backgroundColor: Colors.surfaceDark, borderRadius: 6, overflow: 'hidden' },
-  scoreBarFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 6 },
+  profileName: { fontFamily: Fonts.bodyBold, fontSize: 20, fontWeight: '700', color: Colors.textPrimary },
+  profileMeta: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
+  profileScore: { fontFamily: Fonts.bodyBold, fontSize: 22, fontWeight: '700', color: Colors.accent },
+  profileSkill: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' },
+  scoreBarTrack: { height: 12, backgroundColor: Colors.surfaceDark, borderRadius: 0, overflow: 'hidden' },
+  scoreBarFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 0 },
   feedbackBox: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  feedbackText: { fontFamily: 'serif', fontSize: 13, color: Colors.textPrimary, fontStyle: 'italic', textAlign: 'center' },
-  slotInfo: {
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  slotInfoText: {
-    fontFamily: 'serif',
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-  },
+  feedbackText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textPrimary, fontStyle: 'italic', textAlign: 'center' },
   section: { gap: 8 },
   sectionTitle: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 12,
     color: Colors.textSecondary,
     textTransform: 'uppercase',
@@ -619,13 +604,13 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   actionBtn: {
-    borderRadius: 10,
+    borderRadius: 0,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  actionBtnLabel: { fontFamily: 'serif', fontSize: 15, fontWeight: '700', color: Colors.buttonText },
+  actionBtnLabel: { fontFamily: Fonts.bodyBold, fontSize: 15, fontWeight: '700', color: Colors.buttonText },
   actionBtnLabelDisabled: { color: Colors.textSecondary },
-  actionBtnDesc: { fontFamily: 'serif', fontSize: 12, color: Colors.buttonText, opacity: 0.75, marginTop: 2, fontStyle: 'italic' },
-  empty: { fontFamily: 'serif', fontSize: 14, color: Colors.textSecondary, fontStyle: 'italic', textAlign: 'center', marginTop: 40 },
-  romanceBlocked: { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic', textAlign: 'center' },
+  actionBtnDesc: { fontFamily: Fonts.body, fontSize: 12, color: Colors.buttonText, opacity: 0.75, marginTop: 2, fontStyle: 'italic' },
+  empty: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary, fontStyle: 'italic', textAlign: 'center', marginTop: 40 },
+  romanceBlocked: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic', textAlign: 'center' },
 });

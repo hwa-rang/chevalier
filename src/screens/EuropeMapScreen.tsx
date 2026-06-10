@@ -10,10 +10,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
-import { useGameStore } from '../store/gameStore';
+import { Fonts } from '../theme/fonts';
+import { useGameStore, energyUsed } from '../store/gameStore';
 import PixelMap from '../components/PixelMap';
 import BottomSheet from '../components/BottomSheet';
 import ActivityResultModal from '../components/ActivityResultModal';
+import FatigueGauge from '../components/FatigueGauge';
 import {
   EUROPE_MAP,
   TOURNAMENT_TYPE_COLORS,
@@ -411,6 +413,11 @@ export default function EuropeMapScreen({ navigation }: Props) {
         </View>
       </View>
 
+      {/* Energy gauge */}
+      <View style={{ backgroundColor: Colors.surfaceDark, borderBottomWidth: 1, borderBottomColor: Colors.border, paddingVertical: 10 }}>
+        <FatigueGauge used={energyUsed(player)} />
+      </View>
+
       {/* Scrollable content: map + legend */}
       <ScrollView showsVerticalScrollIndicator={false}>
         <PixelMap
@@ -472,24 +479,23 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   backBtn: { marginRight: 8 },
-  backText: { fontFamily: 'serif', fontSize: 14, color: Colors.accent },
+  backText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.accent },
   title: {
     flex: 1,
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 16,
-    fontWeight: '700',
     color: Colors.textPrimary,
     textAlign: 'center',
   },
   tabBtn: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 8,
+    borderRadius: 0,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  tabBtnText: { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary },
+  tabBtnText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: Colors.surface,
@@ -498,7 +504,7 @@ const styles = StyleSheet.create({
   },
   tab: { flex: 1, paddingVertical: 10, alignItems: 'center' },
   tabActive: { borderBottomWidth: 3, borderBottomColor: Colors.accent },
-  tabText: { fontFamily: 'serif', fontSize: 14, color: Colors.textSecondary },
+  tabText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary },
   tabTextActive: { color: Colors.textPrimary, fontWeight: '700' },
 });
 
@@ -506,52 +512,52 @@ const sheetStyles = StyleSheet.create({
   container: { gap: 10 },
   badgeRow: { flexDirection: 'row', gap: 8 },
   typeBadge: {
-    borderRadius: 6,
+    borderRadius: 0,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  typeBadgeText: { fontFamily: 'serif', fontSize: 12, fontWeight: '700', color: '#fff' },
-  distBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+  typeBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 12, fontWeight: '700', color: '#fff' },
+  distBadge: { borderRadius: 0, paddingHorizontal: 8, paddingVertical: 4 },
   distLocal: { backgroundColor: '#C8E6C9' },
   distRegional: { backgroundColor: '#FFF9C4' },
   distDistant: { backgroundColor: '#FFCCBC' },
-  distBadgeText: { fontFamily: 'serif', fontSize: 11, fontWeight: '700', color: Colors.textPrimary },
-  location: { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' },
-  flavor: { fontFamily: 'serif', fontSize: 13, color: Colors.textPrimary, fontStyle: 'italic' },
+  distBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 11, fontWeight: '700', color: Colors.textPrimary },
+  location: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' },
+  flavor: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textPrimary, fontStyle: 'italic' },
   infoRow: { flexDirection: 'row', gap: 10 },
   infoBlock: { flex: 1, gap: 1 },
   infoLabel: {
-    fontFamily: 'serif', fontSize: 10, color: Colors.textSecondary,
+    fontFamily: Fonts.body, fontSize: 10, color: Colors.textSecondary,
     textTransform: 'uppercase', letterSpacing: 0.5,
   },
-  infoValue: { fontFamily: 'serif', fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
-  infoNote: { fontFamily: 'serif', fontSize: 11, color: Colors.textSecondary, fontStyle: 'italic' },
+  infoValue: { fontFamily: Fonts.bodyBold, fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
+  infoNote: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary, fontStyle: 'italic' },
   reqOk:   { color: '#2E7D32' },
   reqFail: { color: '#C62828' },
-  prizeGlory:  { fontFamily: 'serif', fontSize: 12, color: '#B8860B', fontWeight: '700' },
-  prizeHonor:  { fontFamily: 'serif', fontSize: 12, color: '#7B5EA7', fontWeight: '700' },
-  prizeRep:    { fontFamily: 'serif', fontSize: 12, color: '#2E7D32', fontWeight: '700' },
-  prizeMoney:  { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary },
+  prizeGlory:  { fontFamily: Fonts.bodyBold, fontSize: 12, color: '#B8860B', fontWeight: '700' },
+  prizeHonor:  { fontFamily: Fonts.bodyBold, fontSize: 12, color: '#7B5EA7', fontWeight: '700' },
+  prizeRep:    { fontFamily: Fonts.bodyBold, fontSize: 12, color: '#2E7D32', fontWeight: '700' },
+  prizeMoney:  { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
   equipSection: { gap: 4 },
   equipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  equipItem: { fontFamily: 'serif', fontSize: 12 },
+  equipItem: { fontFamily: Fonts.body, fontSize: 12 },
   equipOk:   { color: '#2E7D32' },
   equipFail: { color: '#C62828' },
   blockList: { gap: 2 },
-  blockText: { fontFamily: 'serif', fontSize: 12, color: '#C62828', fontStyle: 'italic' },
+  blockText: { fontFamily: Fonts.body, fontSize: 12, color: '#C62828', fontStyle: 'italic' },
   enterBtn: {
     backgroundColor: Colors.buttonBg,
-    borderRadius: 8,
+    borderRadius: 0,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 4,
   },
   enterBtnDisabled: { backgroundColor: Colors.surfaceDark, borderWidth: 1, borderColor: Colors.border },
-  enterBtnText: { fontFamily: 'serif', fontSize: 14, fontWeight: '700', color: Colors.buttonText },
+  enterBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, fontWeight: '700', color: Colors.buttonText },
   enterBtnTextDisabled: { color: Colors.textSecondary },
   restBtn: {
     backgroundColor: '#5A4632',
-    borderRadius: 8,
+    borderRadius: 0,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 6,
@@ -562,16 +568,15 @@ const legendStyles = StyleSheet.create({
   container: {
     margin: 14,
     backgroundColor: Colors.surface,
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 12,
     gap: 8,
   },
   title: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 13,
-    fontWeight: '700',
     color: Colors.textPrimary,
     textAlign: 'center',
   },
@@ -589,13 +594,13 @@ const legendStyles = StyleSheet.create({
   dot: {
     width: 12,
     height: 12,
-    borderRadius: 6,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.2)',
   },
-  label: { fontFamily: 'serif', fontSize: 12, color: Colors.textPrimary },
+  label: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textPrimary },
   note: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 11,
     color: Colors.textSecondary,
     fontStyle: 'italic',

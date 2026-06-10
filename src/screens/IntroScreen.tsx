@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/fonts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Intro'>;
 
@@ -78,7 +79,7 @@ export default function IntroScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#2A160A' },
+  safe: { flex: 1, backgroundColor: Colors.parchment },
   viewport: {
     flex: 1,
     overflow: 'hidden',
@@ -90,16 +91,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
   },
   title: {
-    fontFamily: 'serif',
-    fontSize: 34,
-    fontWeight: '700',
+    fontFamily: Fonts.title,
+    fontSize: 40,
     color: Colors.accent,
     textAlign: 'center',
     marginBottom: 24,
     letterSpacing: 2,
   },
   body: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 17,
     color: '#F5EDD6',
     textAlign: 'center',
@@ -113,14 +113,14 @@ const styles = StyleSheet.create({
   },
   startBtn: {
     backgroundColor: Colors.buttonBg,
-    borderRadius: 10,
+    borderRadius: 0,
     paddingVertical: 15,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.accent,
   },
   startText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 16,
     fontWeight: '700',
     color: Colors.buttonText,

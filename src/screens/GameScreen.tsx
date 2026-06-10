@@ -9,8 +9,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
-import { useGameStore, energyUsed } from '../store/gameStore';
-import FatigueGauge from '../components/FatigueGauge';
+import { Fonts } from '../theme/fonts';
+import { useGameStore } from '../store/gameStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Game'>;
 
@@ -61,11 +61,9 @@ export default function GameScreen({ navigation }: Props) {
           activeOpacity={0.85}
         >
           <Text style={styles.mapBannerIcon}>🗺</Text>
-          <Text style={styles.mapBannerText}>Carte du village</Text>
+          <Text style={styles.mapBannerText}>Carte du monde</Text>
           <Text style={styles.mapBannerSub}>Explorez et agissez depuis la carte</Text>
         </TouchableOpacity>
-
-        <Text style={styles.sectionLabel}>Autres menus</Text>
 
         <TouchableOpacity
           style={styles.activityButton}
@@ -111,10 +109,6 @@ export default function GameScreen({ navigation }: Props) {
 
         <View style={styles.spacer} />
 
-        <View style={styles.actionSummary}>
-          <FatigueGauge used={energyUsed(player)} />
-        </View>
-
         <TouchableOpacity
           style={styles.advanceButton}
           onPress={handleAdvance}
@@ -145,14 +139,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusLabel: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 10,
     color: Colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   statusValue: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 13,
     fontWeight: '700',
     color: Colors.textPrimary,
@@ -162,30 +156,21 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 10,
   },
-  sectionLabel: {
-    fontFamily: 'serif',
-    fontSize: 13,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
   activityButton: {
     backgroundColor: Colors.surface,
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
   activityTitle: {
-    fontFamily: 'serif',
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Fonts.title,
+    fontSize: 24,
     color: Colors.textPrimary,
   },
   activityDesc: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     color: Colors.textSecondary,
     fontStyle: 'italic',
@@ -193,16 +178,6 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: 24,
-  },
-  actionSummary: {
-    alignItems: 'stretch',
-    marginBottom: 8,
-  },
-  actionSummaryText: {
-    fontFamily: 'serif',
-    fontSize: 13,
-    color: Colors.textSecondary,
-    fontWeight: '700',
   },
   tournamentButton: {
     borderColor: Colors.accent,
@@ -214,7 +189,7 @@ const styles = StyleSheet.create({
   },
   mapBanner: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 14,
+    borderRadius: 0,
     borderWidth: 2,
     borderColor: Colors.accent,
     paddingHorizontal: 20,
@@ -227,13 +202,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   mapBannerText: {
-    fontFamily: 'serif',
-    fontSize: 22,
-    fontWeight: '700',
+    fontFamily: Fonts.title,
+    fontSize: 30,
     color: Colors.accent,
   },
   mapBannerSub: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     color: Colors.textSecondary,
     fontStyle: 'italic',
@@ -241,12 +215,12 @@ const styles = StyleSheet.create({
   },
   advanceButton: {
     backgroundColor: Colors.buttonBg,
-    borderRadius: 10,
+    borderRadius: 0,
     paddingVertical: 14,
     alignItems: 'center',
   },
   advanceText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 15,
     fontWeight: '700',
     color: Colors.buttonText,

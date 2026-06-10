@@ -8,6 +8,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { TournamentListScreenProps } from '../navigation/types';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/fonts';
 import { useGameStore } from '../store/gameStore';
 import { TOURNAMENTS } from '../data/tournaments';
 import type { Tournament } from '../data/tournaments';
@@ -229,30 +230,29 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   backBtn: { marginRight: 8 },
-  backText: { fontFamily: 'serif', fontSize: 14, color: Colors.accent },
+  backText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.accent },
   title: {
     flex: 1,
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 18,
-    fontWeight: '700',
     color: Colors.textPrimary,
     textAlign: 'center',
   },
   mapBtn: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 8,
+    borderRadius: 0,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  mapBtnText: { fontFamily: 'serif', fontSize: 13, color: Colors.textPrimary },
+  mapBtnText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textPrimary },
   list: { padding: 14, gap: 14 },
 
   // Card
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 14,
@@ -267,56 +267,56 @@ const styles = StyleSheet.create({
   },
   cardName: {
     flex: 1,
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 15,
     fontWeight: '700',
     color: Colors.textPrimary,
   },
-  cardSub: { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' },
+  cardSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' },
 
   // Distance badge
   distanceBadge: {
-    borderRadius: 6,
+    borderRadius: 0,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
   badgeLocal: { backgroundColor: '#C8E6C9' },
   badgeRegional: { backgroundColor: '#FFF9C4' },
   badgeDistant: { backgroundColor: '#FFCCBC' },
-  badgeText: { fontFamily: 'serif', fontSize: 11, fontWeight: '700', color: Colors.textPrimary },
+  badgeText: { fontFamily: Fonts.bodyBold, fontSize: 11, fontWeight: '700', color: Colors.textPrimary },
 
   // Info row
   infoRow: { flexDirection: 'row', gap: 10 },
   infoBlock: { flex: 1, gap: 1 },
   infoLabel: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 10,
     color: Colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  infoValue: { fontFamily: 'serif', fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
-  infoNote: { fontFamily: 'serif', fontSize: 11, color: Colors.textSecondary, fontStyle: 'italic' },
-  prizeGlory: { fontFamily: 'serif', fontSize: 12, color: '#B8860B', fontWeight: '700' },
-  prizeHonor: { fontFamily: 'serif', fontSize: 12, color: '#7B5EA7', fontWeight: '700' },
-  prizeRep: { fontFamily: 'serif', fontSize: 12, color: '#2E7D32', fontWeight: '700' },
-  prizeMoney: { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary },
+  infoValue: { fontFamily: Fonts.bodyBold, fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
+  infoNote: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary, fontStyle: 'italic' },
+  prizeGlory: { fontFamily: Fonts.bodyBold, fontSize: 12, color: '#B8860B', fontWeight: '700' },
+  prizeHonor: { fontFamily: Fonts.bodyBold, fontSize: 12, color: '#7B5EA7', fontWeight: '700' },
+  prizeRep: { fontFamily: Fonts.bodyBold, fontSize: 12, color: '#2E7D32', fontWeight: '700' },
+  prizeMoney: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
 
   // Equipment
   equipRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
-  equipLabel: { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary },
-  equipItem: { fontFamily: 'serif', fontSize: 12 },
+  equipLabel: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
+  equipItem: { fontFamily: Fonts.body, fontSize: 12 },
   equipOwned: { color: '#2E7D32' },
   equipMissing: { color: '#C62828' },
 
   // Block reasons
   blockList: { gap: 2 },
-  blockText: { fontFamily: 'serif', fontSize: 12, color: '#C62828', fontStyle: 'italic' },
+  blockText: { fontFamily: Fonts.body, fontSize: 12, color: '#C62828', fontStyle: 'italic' },
 
   // CTA button
   enterBtn: {
     backgroundColor: Colors.buttonBg,
-    borderRadius: 8,
+    borderRadius: 0,
     paddingVertical: 10,
     alignItems: 'center',
   },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   enterBtnText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 14,
     fontWeight: '700',
     color: Colors.buttonText,

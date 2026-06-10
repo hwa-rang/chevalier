@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/fonts';
 import {
   useGameStore,
   energyUsed,
@@ -520,24 +521,23 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   backBtn: { marginRight: 8 },
-  backText: { fontFamily: 'serif', fontSize: 14, color: Colors.accent },
+  backText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.accent },
   title: {
     flex: 1,
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 16,
-    fontWeight: '700',
     color: Colors.textPrimary,
     textAlign: 'center',
   },
   tabBtn: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 8,
+    borderRadius: 0,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  tabBtnText: { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary },
+  tabBtnText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
 
   // Action economy bar
   actionBar: {
@@ -553,12 +553,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   actionCounterLabel: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     color: Colors.textSecondary,
   },
   actionCounterValue: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 14,
     fontWeight: '700',
     color: Colors.textPrimary,
@@ -575,9 +575,6 @@ const styles = StyleSheet.create({
   // Map container
   mapWrap: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
   },
 
   // Footer / advance month
@@ -590,12 +587,12 @@ const styles = StyleSheet.create({
   },
   advanceBtn: {
     backgroundColor: Colors.buttonBg,
-    borderRadius: 10,
+    borderRadius: 0,
     paddingVertical: 13,
     alignItems: 'center',
   },
   advanceText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 15,
     fontWeight: '700',
     color: Colors.buttonText,
@@ -604,7 +601,7 @@ const styles = StyleSheet.create({
 
   // Bottom sheet content
   flavor: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     color: Colors.textSecondary,
     fontStyle: 'italic',
@@ -614,13 +611,13 @@ const styles = StyleSheet.create({
   },
   forbiddenBox: {
     backgroundColor: '#E8D6C0',
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1.5,
     borderColor: '#9A3A2A',
     padding: 16,
   },
   forbiddenText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 14,
     color: '#9A3A2A',
     textAlign: 'center',
@@ -629,7 +626,7 @@ const styles = StyleSheet.create({
   },
   activityList: { gap: 6 },
   activityHeader: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 11,
     color: Colors.textSecondary,
     textTransform: 'uppercase',
@@ -640,7 +637,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.surface,
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     paddingHorizontal: 14,
@@ -658,21 +655,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   activityLabel: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 14,
     fontWeight: '700',
     color: Colors.textPrimary,
   },
   activityLabelLocked: { color: Colors.textSecondary },
   kindTag: {
-    borderRadius: 4,
+    borderRadius: 0,
     paddingHorizontal: 6,
     paddingVertical: 1,
   },
-  kindTagPrincipal: { backgroundColor: '#7B4F1E' },
-  kindTagSecondary: { backgroundColor: '#8E7A4A' },
+  kindTagPrincipal: { backgroundColor: Colors.buttonBg },
+  kindTagSecondary: { backgroundColor: Colors.border },
   kindTagText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 9,
     fontWeight: '700',
     color: Colors.buttonText,
@@ -680,7 +677,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   activityDesc: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 12,
     color: Colors.textSecondary,
     fontStyle: 'italic',
@@ -688,7 +685,7 @@ const styles = StyleSheet.create({
   },
   activityDescLocked: { color: Colors.surfaceDark },
   activityArrow: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 20,
     color: Colors.accent,
     marginLeft: 8,

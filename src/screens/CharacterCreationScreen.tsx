@@ -13,6 +13,7 @@ import type { CharacterCreationScreenProps } from '../navigation/types';
 import { useGameStore } from '../store/gameStore';
 import type { Background, SkinTone, Hair } from '../types/game';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/fonts';
 
 // ---------------------------------------------------------------------------
 // Data
@@ -378,10 +379,9 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   headerTitle: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 24,
     color: Colors.textPrimary,
-    fontWeight: '700',
     marginBottom: 12,
   },
   dots: {
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: 0,
     backgroundColor: Colors.surfaceDark,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     paddingTop: 28,
   },
   stepPrompt: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 15,
     color: Colors.textSecondary,
     letterSpacing: 1,
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: Colors.border,
     fontSize: 28,
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     color: Colors.textPrimary,
     paddingVertical: 8,
     paddingHorizontal: 0,
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
   toneCircle: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 0,
     borderWidth: 2,
     borderColor: 'transparent',
   },
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   // Step 3 — Background cards
   bgCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 4,
+    borderRadius: 0,
     padding: 16,
     marginBottom: 10,
     borderWidth: 1.5,
@@ -467,14 +467,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   bgName: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 18,
     fontWeight: '700',
     color: Colors.textPrimary,
     marginBottom: 4,
   },
   bgFlavor: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     color: Colors.textSecondary,
     fontStyle: 'italic',
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.tagBg,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 2,
+    borderRadius: 0,
   },
   tagText: {
     fontSize: 11,
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   // Step 4 — Summary
   summaryCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 4,
+    borderRadius: 0,
     padding: 20,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -514,14 +514,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryLabel: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 12,
     color: Colors.textSecondary,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
   summaryValue: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 17,
     color: Colors.textPrimary,
     fontWeight: '700',
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
   summaryToneSwatch: {
     width: 34,
     height: 34,
-    borderRadius: 17,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
   nextButton: {
     backgroundColor: Colors.buttonBg,
     paddingVertical: 16,
-    borderRadius: 3,
+    borderRadius: 0,
     alignItems: 'center',
     minHeight: 52,
     justifyContent: 'center',
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceDark,
   },
   nextButtonText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 17,
     color: Colors.buttonText,
     letterSpacing: 0.5,

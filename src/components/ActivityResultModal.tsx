@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/fonts';
 import type { ChangeLine } from '../utils/statLabels';
 
 interface Props {
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     backgroundColor: Colors.parchment,
-    borderRadius: 14,
+    borderRadius: 0,
     borderWidth: 2,
     borderColor: Colors.border,
     paddingHorizontal: 20,
@@ -83,15 +84,14 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   title: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 18,
-    fontWeight: '700',
     color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: 14,
   },
   empty: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 14,
     fontStyle: 'italic',
     color: Colors.textSecondary,
@@ -107,26 +107,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: Colors.surface,
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     paddingHorizontal: 14,
     paddingVertical: 9,
   },
   rowLabel: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 14,
     color: Colors.textPrimary,
   },
   rowValue: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 15,
     fontWeight: '700',
   },
   valuePos: { color: '#5A8A3A' },
   valueNeg: { color: '#9A3A2A' },
   note: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     fontStyle: 'italic',
     color: Colors.textSecondary,
@@ -137,13 +137,13 @@ const styles = StyleSheet.create({
   },
   btn: {
     backgroundColor: Colors.buttonBg,
-    borderRadius: 8,
+    borderRadius: 0,
     paddingVertical: 13,
     alignItems: 'center',
     marginTop: 12,
   },
   btnText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 15,
     fontWeight: '700',
     color: Colors.buttonText,

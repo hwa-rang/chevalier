@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
+import { Fonts } from '../theme/fonts';
 import { useGameStore } from '../store/gameStore';
 import { slotForSubtype, EMPTY_EQUIPMENT } from '../utils/equipment';
 import { bookEffectFor } from '../data/bookEffects';
@@ -205,20 +206,19 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 22,
-    fontWeight: '700',
     color: Colors.textPrimary,
     letterSpacing: 2,
   },
   goldBadge: {
     backgroundColor: Colors.accent,
-    borderRadius: 12,
+    borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
   goldText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 14,
     fontWeight: '700',
     color: Colors.buttonText,
@@ -235,9 +235,8 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   sectionTitle: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 15,
-    fontWeight: '700',
     color: Colors.accent,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -246,7 +245,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.surface,
-    borderRadius: 8,
+    borderRadius: 0,
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginBottom: 4,
@@ -256,25 +255,25 @@ const styles = StyleSheet.create({
   },
   itemName: {
     flex: 1,
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 15,
     color: Colors.textPrimary,
   },
   quantityBadge: {
     backgroundColor: Colors.tagBg,
-    borderRadius: 10,
+    borderRadius: 0,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
   quantityText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 13,
     fontWeight: '700',
     color: Colors.tagText,
   },
   equipBtn: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     paddingHorizontal: 12,
@@ -285,7 +284,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.accent,
   },
   equipBtnText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 12,
     fontWeight: '700',
     color: Colors.textSecondary,
@@ -299,7 +298,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 16,
     color: Colors.textSecondary,
     fontStyle: 'italic',

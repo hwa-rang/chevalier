@@ -13,3 +13,4 @@ web-build/
 .env
 .eas-build.log
 .expo-export-check/
+.expo-dev.log

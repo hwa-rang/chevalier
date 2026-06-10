@@ -9,8 +9,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { CharacterScreenProps } from '../navigation/types';
 import { Colors } from '../theme/colors';
-import { useGameStore } from '../store/gameStore';
+import { Fonts } from '../theme/fonts';
+import { useGameStore, energyUsed } from '../store/gameStore';
 import CharacterSprite from '../components/CharacterSprite';
+import FatigueGauge from '../components/FatigueGauge';
 
 const BACKGROUND_LABELS: Record<string, string> = {
   noble: 'Noble',
@@ -80,7 +82,7 @@ export default function CharacterScreen({ navigation }: CharacterScreenProps) {
 
         {/* ── Character viewer ── */}
         <View style={styles.viewerContainer}>
-          <Animated.View style={{ transform: [{ scale: spriteScale }] }}>
+          <Animated.View style={[styles.spriteBackdrop, { transform: [{ scale: spriteScale }] }]}>
             <CharacterSprite player={player} flipped={flipped} />
           </Animated.View>
           <Text style={styles.viewerName}>{player.name}</Text>
@@ -108,6 +110,14 @@ export default function CharacterScreen({ navigation }: CharacterScreenProps) {
             label="Points de vie"
             value={`${player.health ?? player.maxHealth ?? 100}/${player.maxHealth ?? 100}`}
           />
+        </View>
+
+        {/* Energy */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Énergie</Text>
+          <View style={{ paddingVertical: 4 }}>
+            <FatigueGauge used={energyUsed(player)} />
+          </View>
         </View>
 
         {/* Prestige */}
@@ -238,12 +248,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   backBtn: { minWidth: 60 },
-  backText: { fontFamily: 'serif', fontSize: 14, color: Colors.accent },
+  backText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.accent },
   title: {
     flex: 1,
-    fontFamily: 'serif',
+    fontFamily: Fonts.title,
     fontSize: 18,
-    fontWeight: '700',
     color: Colors.textPrimary,
     textAlign: 'center',
   },
@@ -254,26 +263,32 @@ const styles = StyleSheet.create({
   viewerContainer: {
     alignItems: 'center',
     backgroundColor: Colors.surface,
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     paddingVertical: 12,
     gap: 4,
   },
+  spriteBackdrop: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 8,
+  },
   viewerName: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 16,
     fontWeight: '700',
     color: Colors.textPrimary,
     marginTop: 4,
   },
   viewerAge: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     color: Colors.textSecondary,
   },
   viewerTier: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 14,
     fontWeight: '700',
     fontStyle: 'italic',
@@ -283,12 +298,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   flipBtnText: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.body,
     fontSize: 13,
     color: Colors.textPrimary,
   },
@@ -299,7 +314,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 14,
@@ -310,36 +325,35 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   cardTitle: {
-    fontFamily: 'serif',
-    fontSize: 13,
+    fontFamily: Fonts.title,
+    fontSize: 22,
     color: Colors.textSecondary,
-    textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 4,
+    marginBottom: 6,
   },
 
   // Stat row
   statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  statLabel: { fontFamily: 'serif', fontSize: 13, color: Colors.textSecondary },
-  statValue: { fontFamily: 'serif', fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
+  statLabel: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary },
+  statValue: { fontFamily: Fonts.bodyBold, fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
 
   // Prestige bars
   prestigeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  prestigeLabel: { fontFamily: 'serif', fontSize: 13, color: Colors.textSecondary, width: 90 },
+  prestigeLabel: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, width: 90 },
   barTrack: {
     flex: 1,
     height: 8,
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 4,
+    borderRadius: 0,
     overflow: 'hidden',
   },
-  barFill: { height: 8, borderRadius: 4 },
-  prestigeValue: { fontFamily: 'serif', fontSize: 13, fontWeight: '700', width: 30, textAlign: 'right' },
+  barFill: { height: 8, borderRadius: 0 },
+  prestigeValue: { fontFamily: Fonts.bodyBold, fontSize: 13, fontWeight: '700', width: 30, textAlign: 'right' },
 
   // Tournament career
   fameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  fameLabel: { fontFamily: 'serif', fontSize: 13, color: Colors.textSecondary },
-  fameTier: { fontFamily: 'serif', fontSize: 15, fontWeight: '700' },
+  fameLabel: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary },
+  fameTier: { fontFamily: Fonts.bodyBold, fontSize: 15, fontWeight: '700' },
 
   recordRow: {
     flexDirection: 'row',
@@ -350,22 +364,22 @@ const styles = StyleSheet.create({
   },
   recordBox: { alignItems: 'center', gap: 2 },
   recordNumber: {
-    fontFamily: 'serif',
+    fontFamily: Fonts.bodyBold,
     fontSize: 28,
     fontWeight: '700',
     color: '#2E7D32',
   },
   recordLoss: { color: '#C62828' },
-  recordLabel: { fontFamily: 'serif', fontSize: 11, color: Colors.textSecondary, textTransform: 'uppercase' },
+  recordLabel: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary, textTransform: 'uppercase' },
   recordDivider: { width: 1, height: 40, backgroundColor: Colors.border },
 
   titlesBlock: { gap: 3 },
-  titlesLabel: { fontFamily: 'serif', fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' },
-  titleItem: { fontFamily: 'serif', fontSize: 13, color: Colors.accent, fontStyle: 'italic' },
-  noTitles: { fontFamily: 'serif', fontSize: 13, color: Colors.textSecondary, fontStyle: 'italic' },
+  titlesLabel: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' },
+  titleItem: { fontFamily: Fonts.body, fontSize: 13, color: Colors.accent, fontStyle: 'italic' },
+  noTitles: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, fontStyle: 'italic' },
 
   // History
   historyItem: { gap: 1, paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: Colors.surfaceDark },
-  historyMeta: { fontFamily: 'serif', fontSize: 11, color: Colors.textSecondary },
-  historyText: { fontFamily: 'serif', fontSize: 13, color: Colors.textPrimary },
+  historyMeta: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary },
+  historyText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textPrimary },
 });
