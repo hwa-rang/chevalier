@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   Animated,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -55,17 +56,52 @@ const TABS: Tab[] = [
   { category: 'animal', label: 'Animaux' },
 ];
 
+/** Theft success chance (0–1) — clumsy thieves get caught. */
+function theftChance(agility: number): number {
+  return Math.max(0.12, Math.min(0.9, 0.5 + agility * 0.0035));
+}
+/** Escape chance (0–1) once spotted — only the swift get away. */
+function escapeChance(speed: number): number {
+  return Math.max(0.1, Math.min(0.9, 0.45 + speed * 0.0035));
+}
+
+/** Flavour shown when a botched escape ends in capture. */
+const FLEE_FAIL_LEADS = [
+  'Le garde vous rattrape sans peine et vous empoigne par le col.',
+  'Vos jambes ne valent pas les siennes : une main de fer s’abat sur votre épaule.',
+  'À peine trois enjambées, et le voilà déjà sur vous.',
+  'La foule vous barre le passage ; le garde n’a plus qu’à se baisser pour vous cueillir.',
+];
+
+/** Flavour shown when the thief gives up without running. */
+const SURRENDER_LEADS = [
+  'Vous levez les mains et rendez votre butin, tête basse.',
+  'Inutile de courir : vous vous rendez sous les huées des marchands.',
+  'Le butin glisse de vos doigts tandis que le garde vous saisit le bras.',
+];
+
+function pickLead(leads: string[]): string {
+  return leads[Math.floor(Math.random() * leads.length)];
+}
+
 export default function ShopScreen({ navigation }: Props) {
   const player = useGameStore((s) => s.player);
   const purchaseItem = useGameStore((s) => s.purchaseItem);
   const sellItem = useGameStore((s) => s.sellItem);
+  const consumeActionSlot = useGameStore((s) => s.consumeActionSlot);
+  const stealMarketSuccess = useGameStore((s) => s.stealMarketSuccess);
+  const commitTheftCaught = useGameStore((s) => s.commitTheftCaught);
 
-  const [mode, setMode] = useState<'buy' | 'sell'>('buy');
+  const [mode, setMode] = useState<'buy' | 'sell' | 'steal'>('buy');
   const [activeCategory, setActiveCategory] = useState<ItemCategory>('weapon');
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Theft flow: when caught, offer to flee; then show the verdict.
+  const [caughtItem, setCaughtItem] = useState<ShopItem | null>(null);
+  const [theftVerdict, setTheftVerdict] = useState<{ lead: string; note: string } | null>(null);
 
   const items = SHOP_ITEMS.filter((i) => i.category === activeCategory);
 
@@ -100,6 +136,38 @@ export default function ShopScreen({ navigation }: Props) {
     showToast(res.ok ? `Vendu pour ${ITEM_SELL_PRICE} g` : res.reason ?? 'Vente refusée');
   }
 
+  function handleSteal(shopItem: ShopItem) {
+    if (!player) return;
+    // A theft attempt costs a monthly action.
+    if (!consumeActionSlot('secondary')) {
+      showToast('Vous êtes épuisé — revenez le mois prochain.');
+      return;
+    }
+    if (Math.random() < theftChance(player.physicalStats.agility)) {
+      stealMarketSuccess(makeInventoryItem(shopItem));
+      showToast(`Subtilisé : ${shopItem.name} (−1 honneur)`);
+    } else {
+      setCaughtItem(shopItem); // spotted → flee-or-surrender modal
+    }
+  }
+
+  function attemptFlee() {
+    if (!player) return;
+    setCaughtItem(null);
+    if (Math.random() < escapeChance(player.physicalStats.speed)) {
+      showToast('Vous fendez la foule et disparaissez !');
+    } else {
+      const res = commitTheftCaught();
+      setTheftVerdict({ lead: pickLead(FLEE_FAIL_LEADS), note: res.note });
+    }
+  }
+
+  function surrender() {
+    setCaughtItem(null);
+    const res = commitTheftCaught();
+    setTheftVerdict({ lead: pickLead(SURRENDER_LEADS), note: res.note });
+  }
+
   if (!player) return null;
 
   const merchantStock = player.merchantStock ?? {};
@@ -132,9 +200,15 @@ export default function ShopScreen({ navigation }: Props) {
         >
           <Text style={[styles.modeText, mode === 'sell' && styles.modeTextActive]}>Vendre</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.modeBtn, mode === 'steal' && styles.modeBtnActive]}
+          onPress={() => setMode('steal')}
+        >
+          <Text style={[styles.modeText, mode === 'steal' && styles.modeTextActive]}>Voler</Text>
+        </TouchableOpacity>
       </View>
 
-      {mode === 'buy' ? (
+      {mode === 'buy' || mode === 'steal' ? (
         <>
           {/* Category tabs */}
           <ScrollView
@@ -158,17 +232,32 @@ export default function ShopScreen({ navigation }: Props) {
             ))}
           </ScrollView>
 
+          {mode === 'steal' && (
+            <Text style={styles.stealHint}>
+              Subtiliser dépend de votre agilité ({player.physicalStats.agility}). Pris en
+              flagrant délit, fuyez grâce à votre vitesse — ou rendez-vous.
+            </Text>
+          )}
+
           {/* Item list */}
           <FlatList
             data={items}
+            style={styles.list}
             keyExtractor={(item) => item.catalogId}
             contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => <ShopItemCard item={item} player={player} onBuy={handleBuy} />}
+            renderItem={({ item }) =>
+              mode === 'steal' ? (
+                <StealItemCard item={item} chance={theftChance(player.physicalStats.agility)} onSteal={handleSteal} />
+              ) : (
+                <ShopItemCard item={item} player={player} onBuy={handleBuy} />
+              )
+            }
           />
         </>
       ) : (
         <FlatList
           data={sellGroups}
+          style={styles.list}
           keyExtractor={(g) => g.subtype}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
@@ -183,6 +272,38 @@ export default function ShopScreen({ navigation }: Props) {
           )}
         />
       )}
+
+      {/* Caught stealing → flee or surrender */}
+      <Modal visible={caughtItem !== null} transparent animationType="fade" onRequestClose={() => setCaughtItem(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Au voleur !</Text>
+            <Text style={styles.modalBody}>
+              On vous a vu glisser {caughtItem?.name} sous votre cape. Les gardes accourent —
+              tenterez-vous de fuir (vitesse {player.physicalStats.speed}) ?
+            </Text>
+            <TouchableOpacity style={styles.modalBtnPrimary} onPress={attemptFlee}>
+              <Text style={styles.modalBtnPrimaryText}>Tenter de fuir</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalBtnGhost} onPress={surrender}>
+              <Text style={styles.modalBtnGhostText}>Se rendre</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Verdict after being caught */}
+      <Modal visible={theftVerdict !== null} transparent animationType="fade" onRequestClose={() => setTheftVerdict(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalLead}>{theftVerdict?.lead}</Text>
+            <Text style={styles.modalBody}>{theftVerdict?.note}</Text>
+            <TouchableOpacity style={styles.modalBtnPrimary} onPress={() => setTheftVerdict(null)}>
+              <Text style={styles.modalBtnPrimaryText}>Soit.</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Toast */}
       {toastVisible && (
@@ -287,6 +408,42 @@ function SellItemCard({
 }
 
 // ---------------------------------------------------------------------------
+// Steal card
+// ---------------------------------------------------------------------------
+
+function StealItemCard({
+  item,
+  chance,
+  onSteal,
+}: {
+  item: ShopItem;
+  chance: number;
+  onSteal: (item: ShopItem) => void;
+}) {
+  const pct = Math.round(chance * 100);
+  const risk = pct >= 66 ? 'Discret' : pct >= 40 ? 'Risqué' : 'Périlleux';
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardMain}>
+        <View style={styles.cardInfo}>
+          <Text style={styles.itemName}>{item.name}</Text>
+          <Text style={styles.itemDescription}>{item.description}</Text>
+          <Text style={styles.stealOdds}>
+            {risk} — {pct}% de réussite
+          </Text>
+        </View>
+        <View style={styles.cardRight}>
+          <Text style={styles.price}>{item.price} g</Text>
+          <TouchableOpacity style={styles.stealButton} onPress={() => onSteal(item)}>
+            <Text style={styles.stealButtonText}>Voler</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Styles
 // ---------------------------------------------------------------------------
 
@@ -315,7 +472,7 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     fontFamily: Fonts.title,
-    fontSize: 22,
+    fontSize: 28,
     color: Colors.textPrimary,
     letterSpacing: 2,
   },
@@ -371,6 +528,7 @@ const styles = StyleSheet.create({
   },
   tabsRow: {
     flexGrow: 0,
+    flexShrink: 0,
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
@@ -385,6 +543,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 0,
+    justifyContent: 'center',
   },
   tabActive: {
     backgroundColor: Colors.buttonBg,
@@ -392,12 +551,17 @@ const styles = StyleSheet.create({
   tabText: {
     fontFamily: Fonts.body,
     fontSize: 13,
-    lineHeight: 18,
+    lineHeight: 22,
     color: Colors.textSecondary,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   tabTextActive: {
     color: Colors.buttonText,
     fontWeight: '700',
+  },
+  list: {
+    flex: 1,
   },
   listContent: {
     padding: 12,
@@ -482,5 +646,83 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.buttonText,
     textAlign: 'center',
+  },
+  stealHint: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+    paddingHorizontal: 14,
+    paddingTop: 10,
+  },
+  stealOdds: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#8B5A2B',
+    marginTop: 2,
+  },
+  stealButton: {
+    backgroundColor: '#6B1F1F',
+    borderRadius: 0,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  stealButtonText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F5E9D0',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  modalCard: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 20,
+    gap: 14,
+  },
+  modalTitle: {
+    fontFamily: Fonts.title,
+    fontSize: 28,
+    color: Colors.textPrimary,
+    letterSpacing: 1,
+  },
+  modalLead: {
+    fontFamily: Fonts.title,
+    fontSize: 24,
+    color: Colors.textPrimary,
+    lineHeight: 32,
+  },
+  modalBody: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  modalBtnPrimary: {
+    backgroundColor: Colors.buttonBg,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalBtnPrimaryText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.buttonText,
+  },
+  modalBtnGhost: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  modalBtnGhostText: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    color: Colors.textSecondary,
   },
 });

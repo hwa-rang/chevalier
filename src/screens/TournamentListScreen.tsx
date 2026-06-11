@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     fontFamily: Fonts.title,
-    fontSize: 18,
+    fontSize: 22,
     color: Colors.textPrimary,
     textAlign: 'center',
   },

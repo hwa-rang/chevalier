@@ -122,6 +122,8 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
     {
       id: 'workMarket', label: 'Travailler au marché', desc: 'Porter, vendre, tenir un étal. On y noue des liens avec le marchand.',
       kind: 'principal',
+      cond: (p) => (p.flags ?? []).includes('banned_market'),
+      condMsg: 'Le marché vous est fermé après vos larcins.',
       req: () => ({ location: 'market', statDelta: { gold: rint(2, 5), knowledgeSkills: { eloquence: 1 } }, ensureNpc: { role: 'merchant', profession: 'le marchand' }, npcScoreDelta: 1 }),
     },
     {
@@ -211,14 +213,14 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
       id: 'visitTavern', label: 'Boire et socialiser', desc: 'Payer une tournée (1 g). On s’y fait parfois un ami.',
       kind: 'secondary',
       cond: (p) => p.gold < 1, condMsg: "Pas assez d'or (1 g).",
-      req: () => ({ location: 'tavern', statDelta: { gold: -1 }, meetRandomFriend: true }),
+      req: () => ({ location: 'tavern', countsAs: 'tavern', statDelta: { gold: -1 }, meetRandomFriend: true }),
     },
     {
       id: 'playChess', label: 'Jouer aux échecs', desc: 'Défier un adversaire local. Requiert un jeu.',
       kind: 'principal',
       cond: (p) => !p.inventory.some((i) => i.subtype === 'chess_set'),
       condMsg: "Vous n'avez pas de jeu d'échecs.",
-      req: () => ({ location: 'tavern', statDelta: { knowledgeSkills: { strategy: 2 } } }),
+      req: () => ({ location: 'tavern', countsAs: 'tavern', statDelta: { knowledgeSkills: { strategy: 2 } } }),
     },
   ],
   home: [
@@ -249,7 +251,8 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
     {
       id: 'workGuard', label: 'Travailler comme garde', desc: "Patrouiller et maintenir l'ordre. Le village respecte ses gardes.",
       kind: 'principal',
-      cond: (p) => p.age < 16, condMsg: 'Requiert 16 ans.',
+      cond: (p) => p.age < 16 || (p.flags ?? []).includes('banned_guard'),
+      condMsg: 'Requiert 16 ans — et fermé aux voleurs notoires.',
       req: () => ({ location: 'guardhouse', statDelta: { gold: rint(2, 4), combatSkills: { swordAndShield: 1 }, prestige: { reputation: 1, honor: 0.5 } } }),
     },
     {
@@ -287,7 +290,8 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
     {
       id: 'workBailiff', label: 'Travailler pour le bailli', desc: "Clercs, collecte d'impôts, administration seigneuriale. On y gagne l'estime des notables.",
       kind: 'principal',
-      cond: (p) => p.age < 16, condMsg: 'Requiert 16 ans.',
+      cond: (p) => p.age < 16 || (p.flags ?? []).includes('banned_bailiff'),
+      condMsg: 'Requiert 16 ans — et fermé aux voleurs notoires.',
       req: () => ({ location: 'bailiff', statDelta: { gold: rint(3, 6), knowledgeSkills: { generalCulture: 1, eloquence: 1 }, prestige: { reputation: 1, honor: 0.2 } } }),
     },
   ],
@@ -578,7 +582,7 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     fontFamily: Fonts.title,
-    fontSize: 16,
+    fontSize: 20,
     color: Colors.textPrimary,
     textAlign: 'center',
   },

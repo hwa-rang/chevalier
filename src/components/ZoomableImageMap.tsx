@@ -25,6 +25,8 @@ interface Props {
   onPoiPress: (poi: PointOfInterest) => void;
   /** 'contain' letterboxes the whole map at zoom 1; 'cover' fills the container. */
   fit?: 'contain' | 'cover';
+  /** Optional "you are here" marker, in the same image-pixel space as POIs. */
+  playerPos?: { x: number; y: number } | null;
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -48,7 +50,7 @@ function midpoint(touches: { pageX: number; pageY: number }[]) {
  * Pinch-to-zoom / drag-to-pan image map with tappable POI markers.
  * Markers are counter-scaled so they keep a constant on-screen size.
  */
-export default function ZoomableImageMap({ source, mapWidth, mapHeight, pois, onPoiPress, fit = 'contain' }: Props) {
+export default function ZoomableImageMap({ source, mapWidth, mapHeight, pois, onPoiPress, fit = 'contain', playerPos }: Props) {
   const [box, setBox] = useState({ w: 0, h: 0 });
 
   const zoom = useRef(new Animated.Value(MIN_ZOOM)).current;
@@ -195,6 +197,27 @@ export default function ZoomableImageMap({ source, mapWidth, mapHeight, pois, on
               </Animated.View>
             );
           })}
+
+          {playerPos && (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.poiAnchor,
+                {
+                  left: playerPos.x * baseScale - 22,
+                  top: playerPos.y * baseScale - 22,
+                  transform: [{ scale: inverseZoom }],
+                },
+              ]}
+            >
+              <View style={styles.playerMarkerOuter}>
+                <View style={styles.playerMarkerInner} />
+              </View>
+              <View style={styles.playerLabelWrap} pointerEvents="none">
+                <Text style={styles.playerLabel}>Vous</Text>
+              </View>
+            </Animated.View>
+          )}
         </Animated.View>
       )}
     </View>
@@ -245,5 +268,33 @@ const styles = StyleSheet.create({
   poiLabelLocked: {
     color: '#aaa',
     fontStyle: 'italic',
+  },
+  playerMarkerOuter: {
+    width: 18,
+    height: 18,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#2B2031',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playerMarkerInner: {
+    width: 8,
+    height: 8,
+    backgroundColor: '#C0392B',
+  },
+  playerLabelWrap: {
+    position: 'absolute',
+    top: 34,
+    backgroundColor: '#C0392B',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  playerLabel: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 8,
+    color: '#fff',
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });

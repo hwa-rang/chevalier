@@ -10,6 +10,9 @@ export const EUROPE_MAP_IMAGE = require('../../assets/maps/europe-map.png');
 export const EUROPE_MAP_WIDTH = 1254;
 export const EUROPE_MAP_HEIGHT = 1254;
 
+// The hero's home — north of Cologne, towards the Low Countries.
+export const PLAYER_HOME_POS = { x: 600, y: 353 };
+
 // ─── Tournament POI colors & icons ────────────────────────────────────────────
 
 export const TOURNAMENT_TYPE_COLORS: Record<TournamentType, string> = {

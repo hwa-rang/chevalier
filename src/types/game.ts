@@ -87,6 +87,8 @@ export interface TournamentRecord {
   wins: number;
   losses: number;
   titles: string[];
+  /** Consecutive losses (reset on a win) — drives the « Maudit » title. */
+  lossStreak?: number;
 }
 
 export interface Relation {
@@ -141,8 +143,10 @@ export interface Player {
   isDead?: boolean;
   /** Short human-readable cause shown on the legend screen. */
   deathCause?: string;
-  /** Persistent story flags set by pivotal choices (dilemmas, quests). */
+  /** Persistent story flags set by pivotal choices (dilemmas, quests, bans). */
   flags?: string[];
+  /** Times caught stealing at the market (drives escalating punishment). */
+  caughtThefts?: number;
   /** Currently accepted contract (one at a time — see data/quests.ts). */
   activeQuest?: {
     id: string;
@@ -168,6 +172,9 @@ export interface Player {
     /** Hunts this month / consecutive months with ≥2. */
     huntMonth: number;
     huntStreak: number;
+    /** Tavern visits this month / consecutive months with ≥2. */
+    tavernMonth?: number;
+    tavernStreak?: number;
     /** Lifetime forge + craftsman jobs. */
     craftJobs: number;
   };

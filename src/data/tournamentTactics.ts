@@ -3,17 +3,19 @@
 // Stances tie the player's PHYSICAL stats (strength/agility/endurance/speed)
 // into tournament rolls — previously they were ignored entirely.
 
-import type { PhysicalStats } from '../types/game';
+import type { PhysicalStats, Player } from '../types/game';
 
 export type PhysicalStatKey = keyof PhysicalStats;
-export type StanceId = 'aggressive' | 'technical' | 'cautious' | 'swift' | 'allin';
+export type StanceId = string;
+export type Discipline = 'combat' | 'archery' | 'wit';
 
 export interface Stance {
   id: StanceId;
   label: string;
   icon: string;
-  /** Physical stat that scales the bonus (null for the all-in stance). */
-  stat: PhysicalStatKey | null;
+  /** Player stat path scaling the bonus, e.g. 'physicalStats.strength' or
+   *  'knowledgeSkills.eloquence' (null for the all-in stance). */
+  statPath: string | null;
   statLabel: string;
   description: string;
   /** Flat roll bonus before stat scaling. */
@@ -38,98 +40,164 @@ export interface Stance {
   requiresMomentum: number;
 }
 
-export const STANCES: Stance[] = [
+// ── Corps-à-corps (mêlée, joute, duel) — stats physiques ──────────────────────
+const COMBAT_STANCES: Stance[] = [
   {
-    id: 'aggressive',
-    label: 'Offensif',
-    icon: '⚔',
-    stat: 'strength',
-    statLabel: 'Force',
+    id: 'aggressive', label: 'Offensif', icon: '⚔',
+    statPath: 'physicalStats.strength', statLabel: 'Force',
     description: 'Frappez fort. Gros avantage, mais épuisant et risqué si vous tombez.',
-    baseBonus: 8,
-    statFactor: 0.18,
-    vigueurCost: 28,
-    vigueurRecover: 0,
-    opponentPenalty: 0,
-    injuryRisk: 8,
-    momentumGain: 2,
-    winsTies: false,
-    consumesMomentum: false,
-    requiresMomentum: 0,
+    baseBonus: 8, statFactor: 0.18, vigueurCost: 28, vigueurRecover: 0,
+    opponentPenalty: 0, injuryRisk: 8, momentumGain: 2, winsTies: false,
+    consumesMomentum: false, requiresMomentum: 0,
   },
   {
-    id: 'technical',
-    label: 'Technique',
-    icon: '🗡',
-    stat: 'agility',
-    statLabel: 'Agilité',
+    id: 'technical', label: 'Technique', icon: '🗡',
+    statPath: 'physicalStats.agility', statLabel: 'Agilité',
     description: "Feintes et précision. Affaiblit la garde de l'adversaire.",
-    baseBonus: 4,
-    statFactor: 0.15,
-    vigueurCost: 16,
-    vigueurRecover: 0,
-    opponentPenalty: 6,
-    injuryRisk: 2,
-    momentumGain: 1,
-    winsTies: false,
-    consumesMomentum: false,
-    requiresMomentum: 0,
+    baseBonus: 4, statFactor: 0.15, vigueurCost: 16, vigueurRecover: 0,
+    opponentPenalty: 6, injuryRisk: 2, momentumGain: 1, winsTies: false,
+    consumesMomentum: false, requiresMomentum: 0,
   },
   {
-    id: 'cautious',
-    label: 'Prudent',
-    icon: '🛡',
-    stat: 'endurance',
-    statLabel: 'Endurance',
+    id: 'cautious', label: 'Prudent', icon: '🛡',
+    statPath: 'physicalStats.endurance', statLabel: 'Endurance',
     description: 'Restez sur la défensive. Léger malus, mais vous reprenez votre souffle.',
-    baseBonus: -4,
-    statFactor: 0.1,
-    vigueurCost: 4,
-    vigueurRecover: 12,
-    opponentPenalty: 0,
-    injuryRisk: 0,
-    momentumGain: 0,
-    winsTies: false,
-    consumesMomentum: false,
-    requiresMomentum: 0,
+    baseBonus: -4, statFactor: 0.1, vigueurCost: 4, vigueurRecover: 12,
+    opponentPenalty: 0, injuryRisk: 0, momentumGain: 0, winsTies: false,
+    consumesMomentum: false, requiresMomentum: 0,
   },
   {
-    id: 'swift',
-    label: 'Vif',
-    icon: '💨',
-    stat: 'speed',
-    statLabel: 'Vitesse',
+    id: 'swift', label: 'Vif', icon: '💨',
+    statPath: 'physicalStats.speed', statLabel: 'Vitesse',
     description: 'Frappez le premier. Peu coûteux, et les égalités tournent en votre faveur.',
-    baseBonus: 3,
-    statFactor: 0.15,
-    vigueurCost: 10,
-    vigueurRecover: 0,
-    opponentPenalty: 0,
-    injuryRisk: 1,
-    momentumGain: 1,
-    winsTies: true,
-    consumesMomentum: false,
-    requiresMomentum: 0,
+    baseBonus: 3, statFactor: 0.15, vigueurCost: 10, vigueurRecover: 0,
+    opponentPenalty: 0, injuryRisk: 1, momentumGain: 1, winsTies: true,
+    consumesMomentum: false, requiresMomentum: 0,
   },
   {
-    id: 'allin',
-    label: "Coup d'éclat",
-    icon: '🔥',
-    stat: null,
-    statLabel: 'Élan',
+    id: 'allin', label: "Coup d'éclat", icon: '🔥',
+    statPath: null, statLabel: 'Élan',
     description: 'Jouez tout votre élan en un assaut spectaculaire. Tout ou rien.',
-    baseBonus: 6,
-    statFactor: 0,
-    vigueurCost: 20,
-    vigueurRecover: 0,
-    opponentPenalty: 0,
-    injuryRisk: 6,
-    momentumGain: 0,
-    winsTies: true,
-    consumesMomentum: true,
-    requiresMomentum: 2,
+    baseBonus: 6, statFactor: 0, vigueurCost: 20, vigueurRecover: 0,
+    opponentPenalty: 0, injuryRisk: 6, momentumGain: 0, winsTies: true,
+    consumesMomentum: true, requiresMomentum: 2,
   },
 ];
+
+// ── Archerie — adresse & souffle (peu de risque de blessure) ──────────────────
+const ARCHERY_STANCES: Stance[] = [
+  {
+    id: 'aim', label: 'Visée posée', icon: '🎯',
+    statPath: 'physicalStats.endurance', statLabel: 'Endurance',
+    description: 'Prenez votre temps et visez le cœur de la cible.',
+    baseBonus: 6, statFactor: 0.15, vigueurCost: 18, vigueurRecover: 0,
+    opponentPenalty: 4, injuryRisk: 0, momentumGain: 1, winsTies: false,
+    consumesMomentum: false, requiresMomentum: 0,
+  },
+  {
+    id: 'rapid', label: 'Tir rapide', icon: '💨',
+    statPath: 'physicalStats.speed', statLabel: 'Vitesse',
+    description: 'Décochez flèche sur flèche sans répit ; les égalités vous reviennent.',
+    baseBonus: 3, statFactor: 0.15, vigueurCost: 12, vigueurRecover: 0,
+    opponentPenalty: 0, injuryRisk: 0, momentumGain: 1, winsTies: true,
+    consumesMomentum: false, requiresMomentum: 0,
+  },
+  {
+    id: 'breath', label: 'Souffle maîtrisé', icon: '🌬',
+    statPath: 'physicalStats.endurance', statLabel: 'Endurance',
+    description: 'Calez votre respiration entre deux flèches et reprenez la main.',
+    baseBonus: -3, statFactor: 0.1, vigueurCost: 4, vigueurRecover: 12,
+    opponentPenalty: 0, injuryRisk: 0, momentumGain: 0, winsTies: false,
+    consumesMomentum: false, requiresMomentum: 0,
+  },
+  {
+    id: 'keeneye', label: 'Œil de lynx', icon: '👁',
+    statPath: 'physicalStats.agility', statLabel: 'Agilité',
+    description: 'Lisez le vent et la distance ; troublez votre rival.',
+    baseBonus: 4, statFactor: 0.15, vigueurCost: 16, vigueurRecover: 0,
+    opponentPenalty: 7, injuryRisk: 0, momentumGain: 1, winsTies: false,
+    consumesMomentum: false, requiresMomentum: 0,
+  },
+  {
+    id: 'perfect', label: 'Flèche parfaite', icon: '🔥',
+    statPath: null, statLabel: 'Élan',
+    description: "Concentrez tout votre élan dans un tir d'exception.",
+    baseBonus: 6, statFactor: 0, vigueurCost: 18, vigueurRecover: 0,
+    opponentPenalty: 0, injuryRisk: 0, momentumGain: 0, winsTies: true,
+    consumesMomentum: true, requiresMomentum: 2,
+  },
+];
+
+// ── Joutes d'esprit (poésie, échecs) — savoir, aucune blessure ────────────────
+const WIT_STANCES: Stance[] = [
+  {
+    id: 'flourish', label: "Trait d'esprit", icon: '✒',
+    statPath: 'knowledgeSkills.eloquence', statLabel: 'Éloquence',
+    description: 'Frappez par une formule brillante qui emporte la cour.',
+    baseBonus: 7, statFactor: 0.16, vigueurCost: 22, vigueurRecover: 0,
+    opponentPenalty: 0, injuryRisk: 0, momentumGain: 2, winsTies: false,
+    consumesMomentum: false, requiresMomentum: 0,
+  },
+  {
+    id: 'erudite', label: 'Joute savante', icon: '📖',
+    statPath: 'knowledgeSkills.generalCulture', statLabel: 'Culture',
+    description: 'Citez les maîtres anciens pour désarçonner votre adversaire.',
+    baseBonus: 4, statFactor: 0.15, vigueurCost: 16, vigueurRecover: 0,
+    opponentPenalty: 6, injuryRisk: 0, momentumGain: 1, winsTies: false,
+    consumesMomentum: false, requiresMomentum: 0,
+  },
+  {
+    id: 'measured', label: 'Mesure', icon: '🕊',
+    statPath: 'knowledgeSkills.literature', statLabel: 'Littérature',
+    description: 'Posez votre voix et retrouvez votre inspiration.',
+    baseBonus: -3, statFactor: 0.1, vigueurCost: 4, vigueurRecover: 12,
+    opponentPenalty: 0, injuryRisk: 0, momentumGain: 0, winsTies: false,
+    consumesMomentum: false, requiresMomentum: 0,
+  },
+  {
+    id: 'riposte', label: 'Réplique vive', icon: '⚡',
+    statPath: 'knowledgeSkills.eloquence', statLabel: 'Éloquence',
+    description: 'Répondez du tac au tac ; les égalités tournent en votre faveur.',
+    baseBonus: 3, statFactor: 0.15, vigueurCost: 10, vigueurRecover: 0,
+    opponentPenalty: 0, injuryRisk: 0, momentumGain: 1, winsTies: true,
+    consumesMomentum: false, requiresMomentum: 0,
+  },
+  {
+    id: 'magnum', label: 'Tirade flamboyante', icon: '🔥',
+    statPath: null, statLabel: 'Élan',
+    description: 'Déployez tout votre élan en une tirade mémorable.',
+    baseBonus: 6, statFactor: 0, vigueurCost: 20, vigueurRecover: 0,
+    opponentPenalty: 0, injuryRisk: 0, momentumGain: 0, winsTies: true,
+    consumesMomentum: true, requiresMomentum: 2,
+  },
+];
+
+export const STANCE_SETS: Record<Discipline, Stance[]> = {
+  combat: COMBAT_STANCES,
+  archery: ARCHERY_STANCES,
+  wit: WIT_STANCES,
+};
+
+/** Which family of stances a tournament type uses. */
+export function disciplineForType(type: string): Discipline {
+  if (type === 'archery') return 'archery';
+  if (type === 'poetry' || type === 'chess') return 'wit';
+  return 'combat';
+}
+
+export function stancesForType(type: string): Stance[] {
+  return STANCE_SETS[disciplineForType(type)];
+}
+
+/** The depleting per-round resource is "Vigueur" in body contests, "Concentration" in wit ones. */
+export function resourceLabel(type: string): string {
+  return disciplineForType(type) === 'wit' ? 'Concentration' : 'Vigueur';
+}
+
+/** True for contact disciplines where a defeat can actually wound you. */
+export function isContactDiscipline(type: string): boolean {
+  return type === 'melee' || type === 'joust' || type === 'swordDuel';
+}
 
 // ── Tuning constants ─────────────────────────────────────────────────────────
 
@@ -150,6 +218,26 @@ export function maxVigueur(stats: PhysicalStats): number {
   return Math.round(90 + clamp(stats.endurance, -100, 100) * 0.3);
 }
 
+/** Reads a dotted stat path (e.g. 'knowledgeSkills.eloquence') from the player. */
+export function statValueAt(player: Player, path: string | null): number {
+  if (!path) return 0;
+  const [group, key] = path.split('.');
+  const g = (player as unknown as Record<string, Record<string, number>>)[group];
+  return g && typeof g[key] === 'number' ? g[key] : 0;
+}
+
+/**
+ * Starting per-round resource pool. Body contests draw on endurance (vigueur);
+ * wit contests on general culture (concentration).
+ */
+export function maxResource(player: Player, type: string): number {
+  const stat =
+    disciplineForType(type) === 'wit'
+      ? player.knowledgeSkills.generalCulture
+      : player.physicalStats.endurance;
+  return Math.round(90 + clamp(stat, -100, 100) * 0.3);
+}
+
 /** Roll penalty when vigueur runs low. */
 export function vigueurPenalty(vigueur: number, max: number): number {
   const pct = max > 0 ? vigueur / max : 0;
@@ -167,12 +255,12 @@ export function cheatSuspicionGain(agility: number): number {
   return Math.round(clamp(28 - agility * 0.12, 8, 40));
 }
 
-/** Stance roll bonus, factoring the keyed physical stat. */
-export function stanceBonus(stance: Stance, stats: PhysicalStats, momentum: number): number {
+/** Stance roll bonus, factoring the keyed stat (physical, combat or knowledge). */
+export function stanceBonus(stance: Stance, player: Player, momentum: number): number {
   if (stance.consumesMomentum) {
     return stance.baseBonus + momentum * ALLIN_BONUS_PER_POINT;
   }
-  const statValue = stance.stat ? stats[stance.stat] : 0;
+  const statValue = statValueAt(player, stance.statPath);
   return Math.round(stance.baseBonus + statValue * stance.statFactor);
 }
 

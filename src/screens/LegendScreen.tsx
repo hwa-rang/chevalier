@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: Fonts.title,
-    fontSize: 44,
+    fontSize: 54,
     color: Colors.textPrimary,
     textAlign: 'center',
     marginTop: 6,
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   epitaph: {
     fontFamily: Fonts.title,
-    fontSize: 30,
+    fontSize: 38,
     color: Colors.accent,
     textAlign: 'center',
   },
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontFamily: Fonts.title,
-    fontSize: 22,
+    fontSize: 28,
     color: Colors.textPrimary,
   },
   ambitionName: {

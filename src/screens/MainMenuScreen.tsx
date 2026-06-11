@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: Fonts.title,
-    fontSize: 72,
+    fontSize: 84,
     color: Colors.textPrimary,
     letterSpacing: 6,
   },

@@ -33,5 +33,5 @@ export const VILLAGE_POIS: PointOfInterest[] = [
   { id: 'craftsman',  label: 'Artisan',  x: 135, y: 258, icon: '🧵', color: '#E9C46A' },
 
   // ── Stable (lower village — adjust x/y to land on the right building) ────────
-  { id: 'stable',     label: 'Écurie',   x: 110, y: 600, icon: '🐴', color: '#8B6F47' },
+  { id: 'stable',     label: 'Écurie',   x: 370, y: 457, icon: '🐴', color: '#8B6F47' },
 ];

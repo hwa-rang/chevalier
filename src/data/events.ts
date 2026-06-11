@@ -1930,7 +1930,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         label: 'Se serrer la ceinture',
         healthDamage: 20,
         statDelta: { physicalStats: { strength: -2, endurance: -2 } },
-        setFlags: ['famine_1315_done'],
+        setFlags: ['famine_1315_done', 'famine_belt'],
         historyText:
           "L'hiver est long et le ventre vide. Vous survivez, amaigri et affaibli.",
       },
@@ -1958,7 +1958,7 @@ export const ANNUAL_EVENTS: GameEvent[] = [
         label: 'Partager vos réserves avec le village (20 or)',
         goldDelta: -20,
         statDelta: { prestige: { honor: 5, reputation: 5 } },
-        setFlags: ['famine_1316_done'],
+        setFlags: ['famine_1316_done', 'famine_shared'],
         historyText:
           'Votre générosité dans la disette ne sera pas oubliée de sitôt.',
       },

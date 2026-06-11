@@ -15,13 +15,14 @@ import { TOURNAMENTS } from '../data/tournaments';
 import type { TournamentType } from '../data/tournaments';
 import type { Player } from '../types/game';
 import {
-  STANCES,
+  stancesForType,
+  resourceLabel,
   MAX_MOMENTUM,
   MOMENTUM_BONUS_PER_POINT,
   CHEAT_BONUS,
   CHEAT_CAUGHT_PENALTY,
   DECISIVE_MARGIN,
-  maxVigueur,
+  maxResource,
   vigueurPenalty,
   cheatSuspicionGain,
   stanceBonus,
@@ -263,7 +264,7 @@ export default function TournamentScreen({ navigation, route }: TournamentScreen
   function handleStart() {
     travelToTournament(totalCost, tournament!.travelMonths);
     const fresh = useGameStore.getState().player!;
-    const mv = maxVigueur(fresh.physicalStats);
+    const mv = maxResource(fresh, tournament!.type);
     setOpponents(generateOpponents(baseSkill, numRounds));
     setMaxVig(mv);
     setVigueur(mv);
@@ -298,7 +299,7 @@ export default function TournamentScreen({ navigation, route }: TournamentScreen
     }
     setSuspicion(newSuspicion);
 
-    const sBonus = stanceBonus(stance, stats, momentum);
+    const sBonus = stanceBonus(stance, player!, momentum);
     const momoBonus = stance.consumesMomentum ? 0 : momentum * MOMENTUM_BONUS_PER_POINT;
     const vigPen = vigueurPenalty(vigueur, maxVig);
     const cheatBonus = cheatArmed ? CHEAT_BONUS : 0;
@@ -465,6 +466,8 @@ export default function TournamentScreen({ navigation, route }: TournamentScreen
       won,
       disqualified: wasDisqualified,
       title,
+      tournamentType: tournament!.type,
+      distance: tournament!.distance,
       prizeMoney: won ? tournament!.prizeMoney : 0,
       prizeGlory: won ? tournament!.prizeGlory : 0,
       prizeReputation: won ? tournament!.prizeReputation : 0,
@@ -514,7 +517,7 @@ export default function TournamentScreen({ navigation, route }: TournamentScreen
           <View style={styles.infoCard}>
             <Text style={styles.tipTitle}>À chaque round</Text>
             <Text style={styles.tipText}>
-              Choisissez une posture selon vos forces, gérez votre vigueur et votre élan.
+              Choisissez une posture selon vos forces, gérez votre {resourceLabel(tournament.type).toLowerCase()} et votre élan.
               Vous pouvez tenter de tricher… si vous osez le risque.
             </Text>
             {tournament.type === 'joust' && (
@@ -541,7 +544,7 @@ export default function TournamentScreen({ navigation, route }: TournamentScreen
 
   if (phase === 'choice') {
     const opp = opponents[roundIndex];
-    const selectedStance = STANCES.find((s) => s.id === selectedStanceId) ?? null;
+    const selectedStance = stancesForType(tournament.type).find((s) => s.id === selectedStanceId) ?? null;
     const projectedSuspicion = cheatArmed
       ? Math.min(95, suspicion + cheatSuspicionGain(player.physicalStats.agility))
       : suspicion;
@@ -561,6 +564,7 @@ export default function TournamentScreen({ navigation, route }: TournamentScreen
             maxVig={maxVig}
             momentum={momentum}
             suspicion={suspicion}
+            resourceName={resourceLabel(tournament.type)}
           />
 
           <View style={styles.roundCard}>
@@ -572,10 +576,10 @@ export default function TournamentScreen({ navigation, route }: TournamentScreen
           </View>
 
           <Text style={styles.sectionLabel}>Choisissez votre posture</Text>
-          {STANCES.map((stance) => {
+          {stancesForType(tournament.type).map((stance) => {
             const locked = momentum < stance.requiresMomentum;
             const selected = selectedStanceId === stance.id;
-            const bonus = stanceBonus(stance, player.physicalStats, momentum);
+            const bonus = stanceBonus(stance, player, momentum);
             return (
               <TouchableOpacity
                 key={stance.id}
@@ -597,8 +601,8 @@ export default function TournamentScreen({ navigation, route }: TournamentScreen
                 </View>
                 <Text style={styles.stanceDesc}>{stance.description}</Text>
                 <Text style={styles.stanceMeta}>
-                  {stance.stat ? `${stance.statLabel} · ` : ''}
-                  Vigueur −{stance.vigueurCost}
+                  {stance.statPath ? `${stance.statLabel} · ` : ''}
+                  {resourceLabel(tournament.type)} −{stance.vigueurCost}
                   {stance.vigueurRecover > 0 ? ` (+${stance.vigueurRecover} récup.)` : ''}
                   {stance.opponentPenalty > 0 ? ` · adversaire −${stance.opponentPenalty}` : ''}
                   {locked ? ` · nécessite ${stance.requiresMomentum} élan` : ''}
@@ -847,17 +851,19 @@ function ResourceBars({
   maxVig,
   momentum,
   suspicion,
+  resourceName,
 }: {
   vigueur: number;
   maxVig: number;
   momentum: number;
   suspicion: number;
+  resourceName: string;
 }) {
   const vigPct = Math.max(0, Math.min(1, vigueur / maxVig));
   return (
     <View style={styles.resourceCard}>
       <View style={styles.resourceRow}>
-        <Text style={styles.resourceLabel}>Vigueur</Text>
+        <Text style={styles.resourceLabel}>{resourceName}</Text>
         <Text style={styles.resourceValue}>{Math.round(vigueur)} / {maxVig}</Text>
       </View>
       <View style={styles.barTrack}>
@@ -929,7 +935,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontFamily: Fonts.title,
-    fontSize: 17,
+    fontSize: 21,
     color: Colors.textPrimary,
     textAlign: 'center',
   },

@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
   },
   backBtn: { paddingVertical: 4, paddingRight: 8 },
   backText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.accent },
-  headerTitle: { fontFamily: Fonts.title, fontSize: 17, color: Colors.textPrimary },
+  headerTitle: { fontFamily: Fonts.title, fontSize: 21, color: Colors.textPrimary },
   content: { padding: 16, gap: 12 },
   profileCard: {
     backgroundColor: Colors.surface,
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
   section: { gap: 8 },
   sectionTitle: {
     fontFamily: Fonts.title,
-    fontSize: 12,
+    fontSize: 15,
     color: Colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,

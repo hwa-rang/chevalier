@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: Fonts.title,
-    fontSize: 20,
+    fontSize: 25,
     color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: 14,

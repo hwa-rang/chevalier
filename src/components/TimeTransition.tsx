@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   },
   year: {
     fontFamily: Fonts.title,
-    fontSize: 64,
+    fontSize: 76,
     color: '#F5EDD6',
     letterSpacing: 4,
   },
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   },
   phrase: {
     fontFamily: Fonts.title,
-    fontSize: 36,
+    fontSize: 44,
     color: '#F5EDD6',
     letterSpacing: 2,
   },

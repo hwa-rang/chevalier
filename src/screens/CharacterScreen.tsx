@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     fontFamily: Fonts.title,
-    fontSize: 18,
+    fontSize: 22,
     color: Colors.textPrimary,
     textAlign: 'center',
   },
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   },
   viewerTitle: {
     fontFamily: Fonts.title,
-    fontSize: 20,
+    fontSize: 25,
     color: Colors.accent,
   },
   titleRow: {
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontFamily: Fonts.title,
-    fontSize: 22,
+    fontSize: 28,
     color: Colors.textSecondary,
     letterSpacing: 1,
     marginBottom: 6,

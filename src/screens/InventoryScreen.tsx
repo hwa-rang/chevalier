@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     fontFamily: Fonts.title,
-    fontSize: 22,
+    fontSize: 28,
     color: Colors.textPrimary,
     letterSpacing: 2,
   },
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: Fonts.title,
-    fontSize: 15,
+    fontSize: 19,
     color: Colors.accent,
     letterSpacing: 1,
     textTransform: 'uppercase',

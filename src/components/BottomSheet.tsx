@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: Fonts.title,
-    fontSize: 17,
+    fontSize: 21,
     color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: 12,

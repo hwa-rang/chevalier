@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: Fonts.title,
-    fontSize: 24,
+    fontSize: 30,
     color: Colors.textPrimary,
     marginBottom: 12,
   },

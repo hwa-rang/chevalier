@@ -19,6 +19,7 @@ import {
   EUROPE_MAP_IMAGE,
   EUROPE_MAP_WIDTH,
   EUROPE_MAP_HEIGHT,
+  PLAYER_HOME_POS,
   TOURNAMENT_TYPE_COLORS,
   TOURNAMENT_TYPE_ICONS,
   TOURNAMENT_TYPE_LABELS,
@@ -425,6 +426,7 @@ export default function EuropeMapScreen({ navigation }: Props) {
           pois={pois}
           onPoiPress={handlePoiPress}
           fit="cover"
+          playerPos={PLAYER_HOME_POS}
         />
 
         {/* Legend toggle, overlaid on the map */}
@@ -494,7 +496,7 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     fontFamily: Fonts.title,
-    fontSize: 16,
+    fontSize: 20,
     color: Colors.textPrimary,
     textAlign: 'center',
   },
@@ -601,7 +603,7 @@ const legendStyles = StyleSheet.create({
   },
   title: {
     fontFamily: Fonts.title,
-    fontSize: 13,
+    fontSize: 16,
     color: Colors.textPrimary,
     textAlign: 'center',
   },

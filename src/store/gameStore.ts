@@ -179,6 +179,39 @@ function grantSkillUnlocks(player: Player): { player: Player; notes: string[] } 
   return { player: p, notes };
 }
 
+/** Fast-forwards the calendar by n months (jail) — no events, resets actions. */
+function skipMonths(p: Player, n: number): Player {
+  let month = p.currentMonth;
+  let year = p.currentYear;
+  let age = p.age;
+  for (let i = 0; i < n; i++) {
+    month++;
+    if (month > 12) { month = 1; year++; age++; }
+  }
+  return {
+    ...p,
+    currentMonth: month,
+    currentYear: year,
+    age,
+    principalActionsUsed: 0,
+    secondaryActionsUsed: 0,
+  };
+}
+
+/** Find-or-create a recurring NPC by role and nudge their score. */
+function ensureNpcScore(p: Player, role: string, profession: string, delta: number): Player {
+  let relations = p.relations;
+  let idx = relations.findIndex((r) => r.npcRole === role);
+  if (idx < 0) {
+    relations = [...relations, makeNpc(role, profession)];
+    idx = relations.length - 1;
+  }
+  relations = relations.map((r, i) =>
+    i === idx ? { ...r, score: clamp(r.score + delta) } : r,
+  );
+  return { ...p, relations };
+}
+
 function buildGriefDelta(statGroup: GriefModifier['statGroup'], statKey: string, amount: number): StatDelta {
   switch (statGroup) {
     case 'physicalStats': return { physicalStats: { [statKey as keyof PhysicalStats]: amount } };
@@ -255,7 +288,7 @@ function makeDefaultPlayer(
     eventsThisYear: 0,
     title: DEFAULT_TITLE_ID,
     unlockedTitles: [DEFAULT_TITLE_ID],
-    counters: { churchMonth: 0, churchStreak: 0, churchYear: 0, huntMonth: 0, huntStreak: 0, craftJobs: 0 },
+    counters: { churchMonth: 0, churchStreak: 0, churchYear: 0, huntMonth: 0, huntStreak: 0, tavernMonth: 0, tavernStreak: 0, craftJobs: 0 },
     equipment: { ...EMPTY_EQUIPMENT },
     merchantStock: {},
     merchantStockMonth: GAME_START_YEAR * 12 + 1,
@@ -373,6 +406,9 @@ export interface TournamentResultParams {
   followersGain?: number;
   /** Health lost from tournament injuries (always applied, on win or loss). */
   healthLost?: number;
+  /** Tournament metadata for title unlocks (Le Hardi, Le voyageur…). */
+  tournamentType?: string;
+  distance?: string;
   /** Prestige deltas from in-tournament choices/cheating — always applied, may be negative. */
   bonusGlory?: number;
   bonusReputation?: number;
@@ -395,7 +431,7 @@ export interface ActivityRequest {
   /** Extra clarifying note appended to the result popup. */
   note?: string;
   /** Behaviour category for title counters (church piety, hunting, craft). */
-  countsAs?: 'church' | 'hunt' | 'craft';
+  countsAs?: 'church' | 'hunt' | 'craft' | 'tavern';
   christianRelationDelta?: number;
   paganRelationDelta?: number;
   /** Find-or-create a recurring NPC (blacksmith/merchant/artisan) and nudge their score. */
@@ -466,6 +502,10 @@ export interface GameState {
   registerBanditVictory: () => void;
   /** Equips an unlocked epithet as the displayed title. */
   setTitle: (titleId: string) => void;
+  /** A successful market theft: gain the item, lose 1 honour, nothing else. */
+  stealMarketSuccess: (item: Item) => void;
+  /** Caught stealing (theft + escape failed): applies the escalating penalty. */
+  commitTheftCaught: () => { level: number; jailed: number; note: string };
   /**
    * Adjusts relation scores by faith. The priest and any 'christian' NPC get
    * `christianDelta`; any 'pagan' NPC gets `paganDelta`. Used by the temple/church.
@@ -524,14 +564,16 @@ export const useGameStore = create<GameState>()(
 
         // Title streaks: months with ≥2 church visits / hunts chain up.
         const oldCounters = player.counters ?? {
-          churchMonth: 0, churchStreak: 0, churchYear: 0, huntMonth: 0, huntStreak: 0, craftJobs: 0,
+          churchMonth: 0, churchStreak: 0, churchYear: 0, huntMonth: 0, huntStreak: 0, tavernMonth: 0, tavernStreak: 0, craftJobs: 0,
         };
         const rolledCounters = {
           ...oldCounters,
           churchStreak: oldCounters.churchMonth >= 2 ? oldCounters.churchStreak + 1 : 0,
           huntStreak: oldCounters.huntMonth >= 2 ? oldCounters.huntStreak + 1 : 0,
+          tavernStreak: (oldCounters.tavernMonth ?? 0) >= 2 ? (oldCounters.tavernStreak ?? 0) + 1 : 0,
           churchMonth: 0,
           huntMonth: 0,
+          tavernMonth: 0,
           // churchYear keeps the passed year's total until titles are evaluated
           // below; it is zeroed afterwards on a new year.
         };
@@ -955,6 +997,87 @@ export const useGameStore = create<GameState>()(
         set({ player: { ...player, title: titleId } });
       },
 
+      stealMarketSuccess: (item) => {
+        const { player } = get();
+        if (!player) return;
+        let next = applyDeltaToPlayer(player, { prestige: { honor: -1 } });
+        next = {
+          ...next,
+          inventory: [...next.inventory, { ...item, id: uuidv4() }],
+          history: [
+            ...next.history,
+            { age: next.age, month: next.currentMonth, text: `Vol réussi au marché : ${item.name}.` },
+          ],
+        };
+        set({ player: next });
+      },
+
+      commitTheftCaught: () => {
+        const { player } = get();
+        if (!player) return { level: 0, jailed: 0, note: '' };
+
+        const level = (player.caughtThefts ?? 0) + 1;
+        const isOutlaw = player.background === 'outlaw';
+        const fine = level === 1 ? 10 : level === 2 ? 25 : 0;
+        const jailed = level >= 3 ? 3 : 0;
+        const repLoss = level === 1 ? 3 : level === 2 ? 5 : 8;
+        const parentLoss = level <= 2 ? (level === 1 ? 5 : 8) : 10;
+        const bailiffLoss = level <= 2 ? (level === 1 ? 8 : 12) : 15;
+
+        let next: Player = { ...player, caughtThefts: level };
+        const parts: string[] = [];
+
+        if (fine > 0) {
+          next = { ...next, gold: Math.max(0, next.gold - fine) };
+          parts.push(`Amende : ${fine} or`);
+        }
+        next = applyDeltaToPlayer(next, { prestige: { reputation: -repLoss } });
+        parts.push(`Réputation −${repLoss}`);
+
+        if (!isOutlaw) {
+          next = {
+            ...next,
+            relations: next.relations.map((r) =>
+              r.type === 'father' || r.type === 'mother'
+                ? { ...r, score: clamp(r.score - parentLoss) }
+                : r,
+            ),
+          };
+          parts.push('Vos parents sont déshonorés');
+        }
+
+        next = ensureNpcScore(next, 'bailiff', 'le bailli', -bailiffLoss);
+        parts.push('Le bailli vous en tient rigueur');
+
+        const flags = [...(next.flags ?? [])];
+        if (level >= 4 && !flags.includes('banned_market')) {
+          flags.push('banned_market');
+          parts.push('Banni du travail au marché');
+        }
+        if (level >= 5) {
+          if (!flags.includes('banned_guard')) flags.push('banned_guard');
+          if (!flags.includes('banned_bailiff')) flags.push('banned_bailiff');
+          parts.push('Banni du poste de garde et du bailli');
+        }
+        next = { ...next, flags };
+
+        if (jailed > 0) {
+          parts.unshift(`Prison : ${jailed} mois aux geôles du poste de garde`);
+          next = skipMonths(next, jailed);
+        }
+
+        const note = parts.join(' · ');
+        next = {
+          ...next,
+          history: [
+            ...next.history,
+            { age: next.age, month: next.currentMonth, text: `Pris à voler au marché. ${note}.` },
+          ],
+        };
+        set({ player: next });
+        return { level, jailed, note };
+      },
+
       applyReligionRelationDelta: (christianDelta, paganDelta) => {
         const { player } = get();
         if (!player) return;
@@ -1172,7 +1295,7 @@ export const useGameStore = create<GameState>()(
         // Title counters (piety, hunting, craft) + freshly earned epithets
         if (req.countsAs) {
           const cnt = next.counters ?? {
-            churchMonth: 0, churchStreak: 0, churchYear: 0, huntMonth: 0, huntStreak: 0, craftJobs: 0,
+            churchMonth: 0, churchStreak: 0, churchYear: 0, huntMonth: 0, huntStreak: 0, tavernMonth: 0, tavernStreak: 0, craftJobs: 0,
           };
           next = {
             ...next,
@@ -1181,6 +1304,7 @@ export const useGameStore = create<GameState>()(
               churchMonth: cnt.churchMonth + (req.countsAs === 'church' ? 1 : 0),
               churchYear: cnt.churchYear + (req.countsAs === 'church' ? 1 : 0),
               huntMonth: cnt.huntMonth + (req.countsAs === 'hunt' ? 1 : 0),
+              tavernMonth: (cnt.tavernMonth ?? 0) + (req.countsAs === 'tavern' ? 1 : 0),
               craftJobs: cnt.craftJobs + (req.countsAs === 'craft' ? 1 : 0),
             },
           };
@@ -1374,6 +1498,7 @@ export const useGameStore = create<GameState>()(
           next.tournamentRecord = {
             wins: next.tournamentRecord.wins + 1,
             losses: next.tournamentRecord.losses,
+            lossStreak: 0,
             titles: params.title
               ? [...next.tournamentRecord.titles, params.title]
               : next.tournamentRecord.titles,
@@ -1391,18 +1516,26 @@ export const useGameStore = create<GameState>()(
           next.tournamentRecord = {
             wins: next.tournamentRecord.wins,
             losses: next.tournamentRecord.losses + 1,
+            lossStreak: (next.tournamentRecord.lossStreak ?? 0) + 1,
             titles: next.tournamentRecord.titles,
           };
-          // A clean defeat costs a little glory and leaves bruises; a
-          // disqualification for cheating is its own (harsher) punishment,
-          // carried by the bonus* penalties passed in.
+          // A clean defeat costs a little glory; in contact disciplines it also
+          // leaves bruises. Archery/poetry/chess defeats don't wound you.
+          // A disqualification for cheating is its own (harsher) punishment.
           if (!params.disqualified) {
             next = applyDeltaToPlayer(next, { prestige: { glory: -3 } });
-            const wound = 5 + Math.floor(Math.random() * 11); // 5–15
-            next = {
-              ...next,
-              health: Math.max(0, (next.health ?? next.maxHealth ?? 100) - wound),
-            };
+            const contact =
+              params.tournamentType === 'melee' ||
+              params.tournamentType === 'joust' ||
+              params.tournamentType === 'swordDuel' ||
+              params.tournamentType === undefined;
+            if (contact) {
+              const wound = 5 + Math.floor(Math.random() * 11); // 5–15
+              next = {
+                ...next,
+                health: Math.max(0, (next.health ?? next.maxHealth ?? 100) - wound),
+              };
+            }
           }
         }
 
@@ -1422,6 +1555,27 @@ export const useGameStore = create<GameState>()(
           };
         }
 
+        // Title flags from tournament context.
+        {
+          const flags = [...(next.flags ?? [])];
+          const armor = next.equipment?.armor ?? null;
+          // "Le Hardi": on-foot close combat (mêlée/duel — not the mounted joust)
+          // fought WITHOUT the full plate.
+          const onFootCombat =
+            params.tournamentType === 'melee' || params.tournamentType === 'swordDuel';
+          if (
+            onFootCombat &&
+            armor !== 'full_plate' &&
+            !flags.includes('fought_unarmored')
+          ) {
+            flags.push('fought_unarmored');
+          }
+          if (params.distance === 'distant' && !flags.includes('traveled_distant')) {
+            flags.push('traveled_distant');
+          }
+          next = { ...next, flags };
+        }
+
         next = {
           ...next,
           history: [
@@ -1429,6 +1583,18 @@ export const useGameStore = create<GameState>()(
             { age: next.age, month: next.currentMonth, text: params.historyText },
           ],
         };
+
+        // Titles earned on the spot (tournoyeur, maudit, hardi…)
+        {
+          const t = applyTitleUnlocks(next);
+          next = {
+            ...t.player,
+            history: [
+              ...t.player.history,
+              ...t.notes.map((text) => ({ age: next.age, month: next.currentMonth, text })),
+            ],
+          };
+        }
 
         set({ player: next });
       },

@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   backText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.accent },
   title: {
     fontFamily: Fonts.title,
-    fontSize: 18,
+    fontSize: 22,
     color: Colors.textPrimary,
   },
   content: { padding: 16, gap: 6 },
@@ -196,6 +196,6 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 4,
   },
-  griefTitle: { fontFamily: Fonts.title, fontSize: 13, color: Colors.textPrimary, marginBottom: 4 },
+  griefTitle: { fontFamily: Fonts.title, fontSize: 16, color: Colors.textPrimary, marginBottom: 4 },
   griefItem: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' },
 });
