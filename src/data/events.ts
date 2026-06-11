@@ -327,9 +327,9 @@ export const MONTHLY_EVENTS: GameEvent[] = [
       {
         label: 'Proposer son aide',
         goldDelta: 5,
-        statDelta: { craftSkills: { blacksmithing: 2 } },
+        statDelta: { physicalStats: { strength: 2 } },
         historyText:
-          "Vous travaillez dur aux côtés de l'artisan et apprenez quelques techniques précieuses.",
+          "Vous travaillez dur aux côtés de l'artisan et vos bras s'en trouvent renforcés.",
       },
       {
         label: 'Refuser',

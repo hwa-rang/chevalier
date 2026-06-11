@@ -31,4 +31,7 @@ export const VILLAGE_POIS: PointOfInterest[] = [
   // ── South workshops ─────────────────────────────────────────────────────────
   { id: 'forge',      label: 'Forge',    x: 318, y: 405, icon: '🔨', color: '#E05C2A' },
   { id: 'craftsman',  label: 'Artisan',  x: 135, y: 258, icon: '🧵', color: '#E9C46A' },
+
+  // ── Stable (lower village — adjust x/y to land on the right building) ────────
+  { id: 'stable',     label: 'Écurie',   x: 110, y: 600, icon: '🐴', color: '#8B6F47' },
 ];

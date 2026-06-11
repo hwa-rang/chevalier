@@ -40,6 +40,9 @@ const hasReadCraftManual = (p: Player): boolean =>
 
 const hasBow = (p: Player): boolean => p.inventory.some((i) => i.subtype === 'bow');
 const hasSword = (p: Player): boolean => p.inventory.some((i) => i.subtype === 'long_sword');
+const hasAxe = (p: Player): boolean => p.inventory.some((i) => i.subtype === 'axe');
+const hasHorse = (p: Player): boolean => p.inventory.some((i) => i.subtype === 'horse');
+const logsCount = (p: Player): number => p.inventory.filter((i) => i.subtype === 'logs').length;
 
 /** +2 g gold bonus once the craft manual has been read. */
 const craftBonus = (p: Player): number => (hasReadCraftManual(p) ? 2 : 0);
@@ -95,7 +98,8 @@ interface Activity {
 
 type LocationId =
   | 'market' | 'church' | 'fields' | 'forge' | 'tavern' | 'home'
-  | 'guardhouse' | 'bailiff' | 'forest' | 'river' | 'craftsman' | 'temple';
+  | 'guardhouse' | 'bailiff' | 'forest' | 'river' | 'craftsman' | 'temple'
+  | 'stable';
 
 const LOCATION_FLAVOR: Record<LocationId, string> = {
   market:     'Les étals débordent de marchandises. Marchands et acheteurs se croisent dans un brouhaha constant.',
@@ -110,6 +114,7 @@ const LOCATION_FLAVOR: Record<LocationId, string> = {
   river:      "L'eau court entre les pierres. Un moment de paix dans le tumulte du village.",
   craftsman:  "Tissus, flèches, outils — les mains habiles de l'artisan façonnent le nécessaire.",
   temple:     "Un sanctuaire dédié aux anciens dieux, antérieur à la venue de la Croix. Les chrétiens du village voient ces lieux d'un très mauvais œil.",
+  stable:     "Odeur de foin et de crottin. Le maquignon y vend des montures et l'on peut s'y exercer à cheval.",
 };
 
 const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
@@ -127,6 +132,17 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
     {
       id: 'buyItems', label: 'Acheter des équipements', desc: 'Ouvrir la boutique du marchand.',
       kind: 'free', navigate: 'Shop',
+    },
+    {
+      id: 'sellLogs',
+      label: 'Vendre des bûches',
+      desc: (p) => {
+        const n = logsCount(p);
+        return n > 0 ? `Écouler vos ${n} bûche(s) au marché (2 g pièce).` : 'Vous n\'avez aucune bûche à vendre.';
+      },
+      kind: 'secondary',
+      cond: (p) => logsCount(p) === 0, condMsg: 'Vous n\'avez aucune bûche.',
+      req: () => ({ location: 'market', sellAll: { subtype: 'logs', unitPrice: 2 } }),
     },
     {
       id: 'stealMarket', label: 'Voler à la dérobée', desc: 'Tenter de dérober une marchandise. Risqué.',
@@ -182,7 +198,7 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
       id: 'workForge', label: 'Travailler à la forge',
       desc: (p) => 'Souffler, forger, tremper. On y côtoie le forgeron.' + (hasReadCraftManual(p) ? ' +2 g (manuel artisanal lu).' : ''),
       kind: 'principal',
-      req: (p) => ({ location: 'forge', countsAs: 'craft', statDelta: { gold: rint(1, 3) + craftBonus(p), craftSkills: { blacksmithing: 2 }, physicalStats: { strength: 1 } }, ensureNpc: { role: 'blacksmith', profession: 'le forgeron' }, npcScoreDelta: 1, note: craftNote(p) }),
+      req: (p) => ({ location: 'forge', countsAs: 'craft', statDelta: { gold: rint(1, 3) + craftBonus(p), physicalStats: { strength: 2 } }, ensureNpc: { role: 'blacksmith', profession: 'le forgeron' }, npcScoreDelta: 1, note: craftNote(p) }),
     },
     {
       id: 'trainHeavy', label: "S'entraîner (arme lourde)", desc: "Manier le marteau du forgeron. Il n'apprécie guère qu'on use son outil.",
@@ -260,6 +276,12 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
       condMsg: 'Requiert un maître et une épée longue.',
       req: () => ({ location: 'guardhouse', statDelta: { combatSkills: { longSword: 3 } } }),
     },
+    {
+      id: 'trainAxe', label: "S'entraîner à la hache", desc: "Fendre le pieu d'entraînement. La hache exige force et précision.",
+      kind: 'principal',
+      cond: (p) => !hasAxe(p), condMsg: 'Requiert une hache.',
+      req: () => ({ location: 'guardhouse', statDelta: { combatSkills: { axe: 2 } } }),
+    },
   ],
   bailiff: [
     {
@@ -297,6 +319,12 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
       cond: (p) => !hasBow(p), condMsg: 'Requiert un arc.',
       req: () => ({ location: 'forest', countsAs: 'hunt', statDelta: { gold: rint(2, 6), combatSkills: { archery: 2 }, prestige: { honor: -1 } } }),
     },
+    {
+      id: 'chopWood', label: 'Couper du bois', desc: 'Abattre et débiter du bois. On en tire des bûches à vendre au marché.',
+      kind: 'principal',
+      cond: (p) => !hasAxe(p), condMsg: 'Requiert une hache.',
+      req: () => ({ location: 'forest', statDelta: { combatSkills: { axe: 1 } }, grantItem: { name: 'Bûche', category: 'goods', subtype: 'logs', count: rint(2, 4) } }),
+    },
   ],
   river: [
     {
@@ -319,13 +347,13 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
       id: 'workTailoring', label: 'Travailler chez le tailleur',
       desc: (p) => "Coudre, couper, assembler. On y connaît l'artisan." + (hasReadCraftManual(p) ? ' +2 g (manuel artisanal lu).' : ''),
       kind: 'principal',
-      req: (p) => ({ location: 'craftsman', countsAs: 'craft', statDelta: { gold: rint(1, 3) + craftBonus(p), craftSkills: { tailoring: 2 }, physicalStats: { agility: 1 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1, note: craftNote(p) }),
+      req: (p) => ({ location: 'craftsman', countsAs: 'craft', statDelta: { gold: rint(1, 3) + craftBonus(p), physicalStats: { agility: 1 }, knowledgeSkills: { eloquence: 1 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1, note: craftNote(p) }),
     },
     {
       id: 'workBowyer', label: "Travailler chez l'archer-armurier",
       desc: (p) => "Façonner arcs et flèches aux côtés de l'artisan." + (hasReadCraftManual(p) ? ' +2 g (manuel artisanal lu).' : ''),
       kind: 'principal',
-      req: (p) => ({ location: 'craftsman', countsAs: 'craft', statDelta: { gold: rint(1, 3) + craftBonus(p), craftSkills: { bowyer: 2 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1, note: craftNote(p) }),
+      req: (p) => ({ location: 'craftsman', countsAs: 'craft', statDelta: { gold: rint(1, 3) + craftBonus(p), combatSkills: { archery: 2 } }, ensureNpc: { role: 'artisan', profession: "l'artisan" }, npcScoreDelta: 1, note: craftNote(p) }),
     },
   ],
   temple: [
@@ -343,6 +371,23 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
       id: 'workTemple', label: 'Servir le sanctuaire', desc: 'Aider les fidèles païens et entretenir le lieu.',
       kind: 'secondary',
       req: () => ({ location: 'temple', statDelta: { gold: rint(1, 2), knowledgeSkills: { apocryphal: 2 } }, christianRelationDelta: -4, paganRelationDelta: 5 }),
+    },
+  ],
+  stable: [
+    {
+      id: 'buyHorse', label: 'Acheter un cheval', desc: 'Le maquignon présente ses montures. (Ouvre la boutique.)',
+      kind: 'free', navigate: 'Shop',
+    },
+    {
+      id: 'cleanStable', label: 'Nettoyer les écuries', desc: 'Curer, panser, charrier le foin. Dur pour le dos, bon pour la bourse.',
+      kind: 'principal',
+      req: () => ({ location: 'stable', statDelta: { gold: rint(2, 4), physicalStats: { endurance: 1 } } }),
+    },
+    {
+      id: 'trainMounted', label: "S'exercer à cheval", desc: 'Charges et voltes dans la lice. Indispensable pour la joute.',
+      kind: 'principal',
+      cond: (p) => !hasHorse(p), condMsg: 'Requiert un cheval.',
+      req: () => ({ location: 'stable', statDelta: { ridingSkills: { horsemanship: 2 } } }),
     },
   ],
 };

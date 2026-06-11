@@ -185,7 +185,6 @@ function buildGriefDelta(statGroup: GriefModifier['statGroup'], statKey: string,
     case 'combatSkills': return { combatSkills: { [statKey]: amount } as StatDelta['combatSkills'] };
     case 'ridingSkills': return { ridingSkills: { [statKey]: amount } as StatDelta['ridingSkills'] };
     case 'knowledgeSkills': return { knowledgeSkills: { [statKey]: amount } as StatDelta['knowledgeSkills'] };
-    case 'craftSkills': return { craftSkills: { [statKey]: amount } as StatDelta['craftSkills'] };
   }
 }
 
@@ -242,11 +241,6 @@ function makeDefaultPlayer(
       strategy: 0,
       eloquence: 0,
       apocryphal: 0,
-    },
-    craftSkills: {
-      tailoring: 0,
-      blacksmithing: 0,
-      bowyer: 0,
     },
     prestige: {
       reputation: 0,
@@ -345,18 +339,6 @@ function applyDeltaToPlayer(player: Player, delta: StatDelta): Player {
     next.knowledgeSkills = ks;
   }
 
-  if (delta.craftSkills) {
-    const cr = { ...next.craftSkills };
-    for (const key of Object.keys(delta.craftSkills) as Array<
-      keyof typeof cr
-    >) {
-      if (delta.craftSkills[key] !== undefined) {
-        cr[key] = clamp(cr[key] + (delta.craftSkills[key] ?? 0));
-      }
-    }
-    next.craftSkills = cr;
-  }
-
   if (delta.prestige) {
     const pr = { ...next.prestige };
     // Floats are preserved for reputation and honor.
@@ -381,12 +363,22 @@ function applyDeltaToPlayer(player: Player, delta: StatDelta): Player {
 
 export interface TournamentResultParams {
   won: boolean;
+  /** True when the run ended by being caught cheating (disqualification). */
+  disqualified?: boolean;
   title?: string;
   prizeMoney?: number;
   prizeGlory?: number;
   prizeReputation?: number;
   prizeHonor?: number;
   followersGain?: number;
+  /** Health lost from tournament injuries (always applied, on win or loss). */
+  healthLost?: number;
+  /** Prestige deltas from in-tournament choices/cheating — always applied, may be negative. */
+  bonusGlory?: number;
+  bonusReputation?: number;
+  bonusHonor?: number;
+  /** Gold gained/spent during the tournament (events). Always applied. */
+  bonusGold?: number;
   historyText: string;
 }
 
@@ -416,6 +408,10 @@ export interface ActivityRequest {
     chance: number;
     pool: Array<{ name: string; category: Item['category']; subtype: string; weight?: number }>;
   };
+  /** Deterministically grant N copies of an item (e.g. chopping wood → logs). */
+  grantItem?: { name: string; category: Item['category']; subtype: string; count?: number };
+  /** Sell every inventory item of this subtype at a unit price (bulk goods). */
+  sellAll?: { subtype: string; unitPrice: number };
 }
 
 export interface ActivityResult {
@@ -1097,6 +1093,34 @@ export const useGameStore = create<GameState>()(
           foundSomething = true;
         }
 
+        // 4b. Deterministic item grant (e.g. chopping wood yields logs)
+        if (req.grantItem) {
+          const { name, category, subtype, count = 1 } = req.grantItem;
+          const granted: Item[] = Array.from({ length: count }, () => ({
+            id: uuidv4(), name, category, subtype,
+          }));
+          next = { ...next, inventory: [...next.inventory, ...granted] };
+          lines.push({ label: name, value: count });
+        }
+
+        // 4c. Sell all inventory items of a subtype at a unit price (bulk goods)
+        if (req.sellAll) {
+          const { subtype, unitPrice } = req.sellAll;
+          const sold = next.inventory.filter((i) => i.subtype === subtype);
+          if (sold.length > 0) {
+            const total = sold.length * unitPrice;
+            next = {
+              ...next,
+              inventory: next.inventory.filter((i) => i.subtype !== subtype),
+              gold: next.gold + total,
+            };
+            lines.push({ label: 'Or', value: total });
+            noteParts.push(`Vendu : ${sold.length} × ${sold[0].name} (+${total} g).`);
+          } else {
+            noteParts.push("Vous n'avez rien à vendre.");
+          }
+        }
+
         // 5. Random new friend (socialising / strolling)
         if (req.meetRandomFriend) {
           if (Math.random() < 0.4) {
@@ -1369,12 +1393,32 @@ export const useGameStore = create<GameState>()(
             losses: next.tournamentRecord.losses + 1,
             titles: next.tournamentRecord.titles,
           };
-          next = applyDeltaToPlayer(next, { prestige: { glory: -3 } });
-          // Defeat leaves its mark: bruises, sprains — sometimes worse.
-          const wound = 5 + Math.floor(Math.random() * 11); // 5–15
+          // A clean defeat costs a little glory and leaves bruises; a
+          // disqualification for cheating is its own (harsher) punishment,
+          // carried by the bonus* penalties passed in.
+          if (!params.disqualified) {
+            next = applyDeltaToPlayer(next, { prestige: { glory: -3 } });
+            const wound = 5 + Math.floor(Math.random() * 11); // 5–15
+            next = {
+              ...next,
+              health: Math.max(0, (next.health ?? next.maxHealth ?? 100) - wound),
+            };
+          }
+        }
+
+        // Side effects from in-tournament choices, applied on win or loss.
+        next = applyDeltaToPlayer(next, {
+          gold: params.bonusGold ?? 0,
+          prestige: {
+            glory: params.bonusGlory ?? 0,
+            reputation: params.bonusReputation ?? 0,
+            honor: params.bonusHonor ?? 0,
+          },
+        });
+        if (params.healthLost && params.healthLost > 0) {
           next = {
             ...next,
-            health: Math.max(0, (next.health ?? next.maxHealth ?? 100) - wound),
+            health: Math.max(0, (next.health ?? next.maxHealth ?? 100) - params.healthLost),
           };
         }
 
@@ -1392,12 +1436,17 @@ export const useGameStore = create<GameState>()(
     {
       name: 'medieval_save_v1',
       storage: createJSONStorage(() => AsyncStorage),
-      // Bump to 1: clears the inventory once on existing saves.
-      // (Items had been seeded in to preview the equipment sprites.)
-      version: 1,
-      migrate: (persistedState: any) => {
-        if (persistedState?.player) {
+      // v1: cleared the inventory once (items had been seeded to preview sprites).
+      // v2: removed the unused craft skills (tailoring/blacksmithing/bowyer).
+      version: 2,
+      migrate: (persistedState: any, fromVersion: number) => {
+        if (!persistedState?.player) return persistedState;
+        if (fromVersion < 1) {
           persistedState.player = { ...persistedState.player, inventory: [] };
+        }
+        if (fromVersion < 2) {
+          const { craftSkills, ...rest } = persistedState.player;
+          persistedState.player = rest;
         }
         return persistedState;
       },

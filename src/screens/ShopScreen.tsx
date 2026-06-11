@@ -31,6 +31,8 @@ interface SellGroup {
 function groupForSale(inventory: Player['inventory']): SellGroup[] {
   const map: Record<string, SellGroup> = {};
   for (const item of inventory) {
+    // Bulk goods (e.g. logs) have their own dedicated market sale, not flat resale.
+    if (item.category === 'goods') continue;
     if (map[item.subtype]) map[item.subtype].quantity += 1;
     else map[item.subtype] = { subtype: item.subtype, name: item.name, quantity: 1 };
   }

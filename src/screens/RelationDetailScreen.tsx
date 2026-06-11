@@ -43,8 +43,6 @@ const MASTER_SKILLS: string[] = [
   'knowledgeSkills.eloquence',
   'knowledgeSkills.medicine',
   'knowledgeSkills.literature',
-  'craftSkills.blacksmithing',
-  'craftSkills.bowyer',
 ];
 
 function skillLabel(path: string): string {
@@ -57,8 +55,6 @@ function skillLabel(path: string): string {
     'knowledgeSkills.eloquence': 'Éloquence',
     'knowledgeSkills.medicine': 'Médecine',
     'knowledgeSkills.literature': 'Littérature',
-    'craftSkills.blacksmithing': 'Forge',
-    'craftSkills.bowyer': 'Archerie (fabrication)',
   };
   return labels[path] ?? path;
 }
@@ -67,7 +63,6 @@ function buildSkillDelta(skillPath: string, amount: number): StatDelta {
   const [group, key] = skillPath.split('.');
   if (group === 'combatSkills') return { combatSkills: { [key]: amount } as StatDelta['combatSkills'] };
   if (group === 'knowledgeSkills') return { knowledgeSkills: { [key]: amount } as StatDelta['knowledgeSkills'] };
-  if (group === 'craftSkills') return { craftSkills: { [key]: amount } as StatDelta['craftSkills'] };
   if (group === 'ridingSkills') return { ridingSkills: { [key]: amount } as StatDelta['ridingSkills'] };
   return {};
 }

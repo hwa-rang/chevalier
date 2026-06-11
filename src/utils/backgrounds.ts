@@ -10,8 +10,7 @@ const BACKGROUND_BONUSES: Record<Background, StatDelta> = {
     knowledgeSkills: { eloquence: 20, generalCulture: 20 },
   },
   blacksmith: {
-    craftSkills: { blacksmithing: 25 },
-    physicalStats: { strength: 15, endurance: 10 },
+    physicalStats: { strength: 30, endurance: 15 },
   },
   farmer: {
     physicalStats: { endurance: 20, strength: 15, speed: 10 },

@@ -38,6 +38,7 @@ const CATEGORY_LABELS: Record<ItemCategory, string> = {
   game: 'Jeux',
   clothing: 'Vêtements',
   animal: 'Animaux',
+  goods: 'Ressources',
 };
 
 const CATEGORY_ORDER: ItemCategory[] = [
@@ -45,6 +46,7 @@ const CATEGORY_ORDER: ItemCategory[] = [
   'armor',
   'clothing',
   'animal',
+  'goods',
   'book',
   'game',
 ];

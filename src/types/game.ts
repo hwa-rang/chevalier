@@ -35,7 +35,8 @@ export type ItemCategory =
   | 'book'
   | 'game'
   | 'clothing'
-  | 'animal';
+  | 'animal'
+  | 'goods';
 
 export interface PhysicalStats {
   /** -100 to 100. Soft cap: strength + agility ≤ 120. */
@@ -73,12 +74,6 @@ export interface KnowledgeSkills {
   apocryphal: number;
 }
 
-export interface CraftSkills {
-  tailoring: number;
-  blacksmithing: number;
-  bowyer: number;
-}
-
 export interface Prestige {
   /** -100 to 100. Hard to raise; floats allowed. */
   reputation: number;
@@ -112,7 +107,7 @@ export interface Relation {
 }
 
 export interface GriefModifier {
-  statGroup: 'physicalStats' | 'combatSkills' | 'ridingSkills' | 'knowledgeSkills' | 'craftSkills';
+  statGroup: 'physicalStats' | 'combatSkills' | 'ridingSkills' | 'knowledgeSkills';
   statKey: string;
   /** Absolute month (year * 12 + month) after which the grief expires */
   expiresAtAbsoluteMonth: number;
@@ -187,7 +182,6 @@ export interface Player {
   combatSkills: CombatSkills;
   ridingSkills: RidingSkills;
   knowledgeSkills: KnowledgeSkills;
-  craftSkills: CraftSkills;
   prestige: Prestige;
   inventory: Item[];
   /** Subtypes of books already read (a book can only be read once). */
@@ -226,6 +220,5 @@ export type StatDelta = {
   combatSkills?: Partial<CombatSkills>;
   ridingSkills?: Partial<RidingSkills>;
   knowledgeSkills?: Partial<KnowledgeSkills>;
-  craftSkills?: Partial<CraftSkills>;
   prestige?: Partial<Prestige>;
 };

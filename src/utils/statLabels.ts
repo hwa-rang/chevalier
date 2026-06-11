@@ -28,10 +28,6 @@ const LABELS: Record<string, string> = {
   'knowledgeSkills.eloquence': 'Éloquence',
   'knowledgeSkills.apocryphal': 'Connaissances apocryphes',
 
-  'craftSkills.tailoring': 'Couture',
-  'craftSkills.blacksmithing': 'Forge',
-  'craftSkills.bowyer': 'Arc et flèches',
-
   'prestige.reputation': 'Réputation',
   'prestige.glory': 'Gloire',
   'prestige.honor': 'Honneur',
@@ -47,7 +43,6 @@ const GROUP_KEYS = [
   'combatSkills',
   'ridingSkills',
   'knowledgeSkills',
-  'craftSkills',
   'prestige',
 ] as const;
 
