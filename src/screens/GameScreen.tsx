@@ -14,7 +14,6 @@ import { Fonts } from '../theme/fonts';
 import { useGameStore } from '../store/gameStore';
 import { ambitionById, ambitionProgress } from '../data/ambitions';
 import { questById, questMonthsLeft } from '../data/quests';
-import { titleById, DEFAULT_TITLE_ID } from '../data/titles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Game'>;
 
@@ -41,40 +40,11 @@ export default function GameScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* Status bar */}
+      {/* Status bar — the current date, centered */}
       <View style={styles.statusBar}>
-        <View style={styles.statusItem}>
-          <Text style={styles.statusLabel}>Personnage</Text>
-          <Text style={styles.statusValue}>{player.name}</Text>
-          <Text style={styles.statusTitle}>
-            {titleById(player.title ?? DEFAULT_TITLE_ID).label}
-          </Text>
-        </View>
-        <View style={styles.statusItem}>
-          <Text style={styles.statusLabel}>Âge</Text>
-          <Text style={styles.statusValue}>{player.age} ans</Text>
-        </View>
-        <View style={styles.statusItem}>
-          <Text style={styles.statusLabel}>Date</Text>
-          <Text style={styles.statusValue}>
-            {MONTH_NAMES[player.currentMonth - 1]} {player.currentYear}
-          </Text>
-        </View>
-        <View style={styles.statusItem}>
-          <Text style={styles.statusLabel}>Or</Text>
-          <Text style={styles.statusValue}>{player.gold} g</Text>
-        </View>
-        <View style={styles.statusItem}>
-          <Text style={styles.statusLabel}>PV</Text>
-          <Text
-            style={[
-              styles.statusValue,
-              (player.health ?? 100) <= 30 && { color: '#EF5A6F' },
-            ]}
-          >
-            {player.health ?? player.maxHealth ?? 100}/{player.maxHealth ?? 100}
-          </Text>
-        </View>
+        <Text style={styles.dateText}>
+          {MONTH_NAMES[player.currentMonth - 1]} {player.currentYear}
+        </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -219,37 +189,20 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.parchment,
   },
   statusBar: {
-    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 4,
+    paddingVertical: 12,
   },
-  statusItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statusLabel: {
-    fontFamily: Fonts.body,
-    fontSize: 10,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  statusValue: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 13,
-    fontWeight: '700',
+  dateText: {
+    fontFamily: Fonts.title,
+    fontSize: 28,
     color: Colors.textPrimary,
-    marginTop: 2,
-  },
-  statusTitle: {
-    fontFamily: Fonts.body,
-    fontSize: 10,
-    color: Colors.accent,
-    fontStyle: 'italic',
+    textAlign: 'center',
+    letterSpacing: 1,
   },
   content: {
     padding: 16,

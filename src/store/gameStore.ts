@@ -499,7 +499,7 @@ export interface GameState {
   /** Wounds the player (combat, hardship). Health 0 = death at month's end. */
   applyDamage: (amount: number) => void;
   /** Marks a bandit camp as cleared (quest tracking). */
-  registerBanditVictory: () => void;
+  registerBanditVictory: (campId: string) => void;
   /** Equips an unlocked epithet as the displayed title. */
   setTitle: (titleId: string) => void;
   /** A successful market theft: gain the item, lose 1 honour, nothing else. */
@@ -984,10 +984,17 @@ export const useGameStore = create<GameState>()(
         set({ player: { ...player, health: hp } });
       },
 
-      registerBanditVictory: () => {
+      registerBanditVictory: (campId) => {
         const { player } = get();
         if (!player) return;
-        set({ player: { ...player, banditsDefeated: (player.banditsDefeated ?? 0) + 1 } });
+        const absMonth = player.currentYear * 12 + player.currentMonth;
+        set({
+          player: {
+            ...player,
+            banditsDefeated: (player.banditsDefeated ?? 0) + 1,
+            banditCampClears: { ...(player.banditCampClears ?? {}), [campId]: absMonth },
+          },
+        });
       },
 
       setTitle: (titleId) => {

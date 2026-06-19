@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -43,7 +43,6 @@ function fameTierColor(glory: number): string {
 export default function CharacterScreen({ navigation }: CharacterScreenProps) {
   const player = useGameStore((s) => s.player);
   const setTitle = useGameStore((s) => s.setTitle);
-  const [flipped, setFlipped] = useState(false);
   const spriteScale = useRef(new Animated.Value(1)).current;
   const prevInvLen  = useRef(player?.inventory.length ?? 0);
 
@@ -82,10 +81,10 @@ export default function CharacterScreen({ navigation }: CharacterScreenProps) {
 
       <ScrollView contentContainerStyle={styles.body}>
 
-        {/* ── Character viewer ── */}
+        {/* ── Character viewer — name, title, identity all under the portrait ── */}
         <View style={styles.viewerContainer}>
           <Animated.View style={[styles.spriteBackdrop, { transform: [{ scale: spriteScale }] }]}>
-            <CharacterSprite player={player} flipped={flipped} />
+            <CharacterSprite player={player} flipped={false} />
           </Animated.View>
           <Text style={styles.viewerName}>{player.name}</Text>
           <Text style={styles.viewerTitle}>
@@ -93,28 +92,18 @@ export default function CharacterScreen({ navigation }: CharacterScreenProps) {
           </Text>
           <Text style={styles.viewerAge}>{player.age} ans</Text>
           <Text style={[styles.viewerTier, { color: tierColor }]}>{tier}</Text>
+          <View style={styles.viewerMetaRow}>
+            <Text style={styles.viewerMeta}>
+              {BACKGROUND_LABELS[player.background] ?? player.background}
+            </Text>
+            <Text style={styles.viewerMetaDot}>·</Text>
+            <Text style={styles.viewerMeta}>{player.gold} g</Text>
+          </View>
           <View style={styles.viewerActions}>
-            <TouchableOpacity onPress={() => setFlipped((f) => !f)} style={styles.flipBtn}>
-              <Text style={styles.flipBtnText}>Retourner</Text>
-            </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate('Inventory')} style={styles.flipBtn}>
               <Text style={styles.flipBtnText}>Équipement</Text>
             </TouchableOpacity>
           </View>
-        </View>
-
-        {/* Identity */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Identité</Text>
-          <StatRow label="Nom" value={player.name} />
-          <StatRow label="Âge" value={`${player.age} ans`} />
-          <StatRow label="Origine" value={BACKGROUND_LABELS[player.background] ?? player.background} />
-          <StatRow label="Or" value={`${player.gold} g`} />
-          <StatRow label="Partisans" value={String(player.followers)} />
-          <StatRow
-            label="Points de vie"
-            value={`${player.health ?? player.maxHealth ?? 100}/${player.maxHealth ?? 100}`}
-          />
         </View>
 
         {/* Condition: health + energy */}
@@ -161,6 +150,7 @@ export default function CharacterScreen({ navigation }: CharacterScreenProps) {
           <PrestigeBar label="Gloire" value={prestige.glory} color="#B8860B" />
           <PrestigeBar label="Honneur" value={prestige.honor} color="#7B5EA7" />
           <PrestigeBar label="Réputation" value={prestige.reputation} color="#2E7D32" />
+          <StatRow label="Partisans" value={String(player.followers)} />
         </View>
 
         {/* Tournament career */}
@@ -318,6 +308,23 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   viewerAge: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  viewerMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
+  },
+  viewerMeta: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  viewerMetaDot: {
     fontFamily: Fonts.body,
     fontSize: 13,
     color: Colors.textSecondary,

@@ -1,4 +1,4 @@
-import type { EquipSlot, Equipment } from '../types/game';
+import type { EquipSlot, Equipment, Item } from '../types/game';
 
 /**
  * Which slot an item subtype occupies. Only subtypes listed here are
@@ -37,6 +37,29 @@ export function slotForSubtype(subtype: string): EquipSlot | null {
 
 export function isEquippable(subtype: string): boolean {
   return subtype in SLOT_BY_SUBTYPE;
+}
+
+/**
+ * Helmet subtypes that count as a tournament "heaume". All bascinets qualify;
+ * the chapel de fer (foot-soldier's wide-brimmed hat) does not.
+ */
+export const HEAUME_SUBTYPES: ReadonlySet<string> = new Set([
+  'helmet_nasal',
+  'helmet_corbeau',
+  'helmet_roa',
+  'helmet_crusader',
+  'helmet_apocryphal',
+]);
+
+/**
+ * True when the inventory satisfies a tournament required-item subtype.
+ * The generic 'helmet' requirement is met by any qualifying bascinet.
+ */
+export function ownsRequiredItem(inventory: Pick<Item, 'subtype'>[], required: string): boolean {
+  if (required === 'helmet') {
+    return inventory.some((i) => HEAUME_SUBTYPES.has(i.subtype));
+  }
+  return inventory.some((i) => i.subtype === required);
 }
 
 export const EMPTY_EQUIPMENT: Equipment = {

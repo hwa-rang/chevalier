@@ -18,7 +18,7 @@ const LABELS: Record<string, string> = {
   'combatSkills.archery': "Tir à l'arc",
 
   'ridingSkills.horsemanship': 'Équitation',
-  'ridingSkills.animalHandling': 'Soin animalier',
+  'ridingSkills.animalHandling': 'Dressage',
 
   'knowledgeSkills.generalCulture': 'Culture générale',
   'knowledgeSkills.literature': 'Littérature',

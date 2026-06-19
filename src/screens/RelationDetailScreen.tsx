@@ -22,6 +22,15 @@ import type { Relation, RelationType, StatDelta } from '../types/game';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RelationDetail'>;
 
+// Runtime-only RNG.
+const rint = (min: number, max: number): number =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
+
+/** Minimum relation score required to ask someone for money. */
+const ASK_MONEY_MIN = 80;
+/** Cost of offering a gift. */
+const GIFT_COST = 5;
+
 const TYPE_LABELS: Record<RelationType, string> = {
   father: 'Père',
   mother: 'Mère',
@@ -369,6 +378,71 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
     showFeedback(`${relation.name} est maintenant votre amant(e) !`);
   };
 
+  // --- FAVORS & MISCHIEF (available for any relation) ---
+  const doCadeau = () => {
+    if (player.gold < GIFT_COST) {
+      showFeedback(`Pas assez d'or (${GIFT_COST} g requis).`);
+      return;
+    }
+    if (!tryUseSlot('secondary')) return;
+    updateScore(6);
+    applyStatDelta({ gold: -GIFT_COST, prestige: { honor: 0.3 } });
+    addToHistory(`Vous avez offert un présent à ${relation.name}.`);
+    showFeedback(`-${GIFT_COST} g · Relation +6 · Honneur +0.3`);
+  };
+
+  const doHumour = () => {
+    if (!tryUseSlot('secondary')) return;
+    // The warmer the relation, the more readily the joke lands.
+    const chance = Math.max(0.15, Math.min(0.9, 0.35 + relation.score * 0.005));
+    if (Math.random() < chance) {
+      updateScore(4);
+      addToHistory(`${relation.name} a ri de bon cœur à votre plaisanterie.`);
+      showFeedback(`Relation +4 · La blague a fait mouche !`);
+    } else {
+      updateScore(-1);
+      addToHistory(`Votre plaisanterie est tombée à plat devant ${relation.name}.`);
+      showFeedback(`Relation -1 · Un blanc gênant…`);
+    }
+  };
+
+  const doDemanderArgent = () => {
+    if (relation.score <= ASK_MONEY_MIN) return;
+    if (!tryUseSlot('secondary')) return;
+    const sum = rint(5, 15);
+    updateScore(-3);
+    applyStatDelta({ gold: sum });
+    addToHistory(`${relation.name} vous a prêté ${sum} g de bon cœur.`);
+    showFeedback(`+${sum} g · Relation -3`);
+  };
+
+  // Pickpocket — same agility-based roll as the market theft.
+  const doFaireLesPoches = () => {
+    if (!tryUseSlot('secondary')) return;
+    const chance = Math.max(0.12, Math.min(0.9, 0.5 + player.physicalStats.agility * 0.0035));
+    if (Math.random() < chance) {
+      const loot = rint(1, 8);
+      applyStatDelta({ gold: loot, prestige: { honor: -1 } });
+      addToHistory(`Vous avez délesté ${relation.name} de ${loot} g sans être vu.`);
+      showFeedback(`+${loot} g · Honneur -1 · Ni vu ni connu`);
+    } else {
+      const newScore = Math.max(-100, relation.score - 20);
+      const becomesEnemy = newScore <= -50 && relation.type !== 'enemy' && !isFamily;
+      addRelation({
+        ...relation,
+        score: newScore,
+        ...(becomesEnemy ? { type: 'enemy' as RelationType } : {}),
+      });
+      applyStatDelta({ prestige: { reputation: -2, honor: -1 } });
+      addToHistory(`${relation.name} vous a surpris la main dans sa bourse !`);
+      showFeedback(
+        becomesEnemy
+          ? `Pris sur le fait ! Relation -20 · ${relation.name} vous voue désormais sa haine.`
+          : `Pris sur le fait ! Relation -20 · Réputation -2`,
+      );
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
@@ -530,6 +604,28 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
           <Text style={styles.romanceBlocked}>{romance.reason}</Text>
         )}
 
+        {/* FAVORS — always available */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Faveurs</Text>
+          <ActionButton
+            label="Offrir un cadeau" description={`-${GIFT_COST} g · +6 relation`}
+            disabled={player.gold < GIFT_COST || !secondaryLeft}
+            disabledReason={player.gold < GIFT_COST ? `Pas assez d'or (${GIFT_COST} g)` : SOCIAL_SLOT_MSG}
+            onPress={doCadeau}
+          />
+          <ActionButton
+            label="Faire de l'humour" description="Plus la relation est bonne, mieux ça passe"
+            disabled={!secondaryLeft} disabledReason={SOCIAL_SLOT_MSG}
+            onPress={doHumour}
+          />
+          <ActionButton
+            label="Demander de l'argent" description="Emprunter quelques pièces · relation -3"
+            disabled={relation.score <= ASK_MONEY_MIN || !secondaryLeft}
+            disabledReason={relation.score <= ASK_MONEY_MIN ? 'Relation requise > 80' : SOCIAL_SLOT_MSG}
+            onPress={doDemanderArgent}
+          />
+        </View>
+
         {/* HOSTILE ACTIONS — always available */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Hostilité</Text>
@@ -542,6 +638,11 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
             label="Insulter" description="-10 relation (peut créer un ennemi)"
             disabled={!secondaryLeft} disabledReason={SOCIAL_SLOT_MSG}
             onPress={doInsulter} variant="danger"
+          />
+          <ActionButton
+            label="Faire les poches" description="Voler quelques pièces — risqué (selon agilité)"
+            disabled={!secondaryLeft} disabledReason={SOCIAL_SLOT_MSG}
+            onPress={doFaireLesPoches} variant="danger"
           />
         </View>
       </ScrollView>

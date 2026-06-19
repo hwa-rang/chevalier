@@ -60,7 +60,7 @@ export default function IntroScreen({ navigation }: Props) {
           style={[styles.crawl, { transform: [{ translateY: scrollY }] }]}
           onLayout={(e) => setTextH(e.nativeEvent.layout.height)}
         >
-          <Text style={styles.title}>Chevalier</Text>
+          <Text style={styles.title}>Chronica Fatorum</Text>
           <Text style={styles.body}>{NARRATIVE}</Text>
         </Animated.View>
       </View>

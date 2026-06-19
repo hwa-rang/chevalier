@@ -28,7 +28,7 @@ export default function MainMenuScreen({ navigation }: MainMenuScreenProps) {
       <View style={styles.container}>
         <View style={styles.titleSection}>
           <Text style={styles.era}>Anno Domini · XIV Siècle</Text>
-          <Text style={styles.title}>Chevalier</Text>
+          <Text style={styles.title}>Chronica{'\n'}Fatorum</Text>
           <View style={styles.divider} />
           <Text style={styles.tagline}>Une vie de gloire, d'honneur et de sang</Text>
         </View>
@@ -86,9 +86,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: Fonts.title,
-    fontSize: 84,
+    fontSize: 56,
+    lineHeight: 60,
     color: Colors.textPrimary,
-    letterSpacing: 6,
+    letterSpacing: 4,
+    textAlign: 'center',
   },
   divider: {
     width: 72,

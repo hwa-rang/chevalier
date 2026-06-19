@@ -15,6 +15,7 @@ import ZoomableImageMap from '../components/ZoomableImageMap';
 import BottomSheet from '../components/BottomSheet';
 import ActivityResultModal from '../components/ActivityResultModal';
 import FatigueGauge from '../components/FatigueGauge';
+import MapShortcuts from '../components/MapShortcuts';
 import {
   EUROPE_MAP_IMAGE,
   EUROPE_MAP_WIDTH,
@@ -33,6 +34,7 @@ import type { Tournament, TournamentType } from '../data/tournaments';
 import type { PointOfInterest } from '../components/PixelMap';
 import type { Player } from '../types/game';
 import type { ChangeLine } from '../utils/statLabels';
+import { ownsRequiredItem } from '../utils/equipment';
 
 /** Reputation below which bandits will shelter you. */
 const BANDIT_REST_REP_MAX = -20;
@@ -41,6 +43,17 @@ const BANDIT_REST_REP_MAX = -20;
 function martialPower(p: Player): number {
   const bestCombat = Math.max(0, ...Object.values(p.combatSkills));
   return bestCombat + p.physicalStats.strength * 0.5 + p.physicalStats.endurance * 0.3;
+}
+
+/** A cleared camp only repopulates after 5 years. */
+const BANDIT_COOLDOWN_MONTHS = 60;
+
+/** Months left before a cleared camp can be raided again (0 = available). */
+function campCooldownLeft(player: Player, campId: string): number {
+  const last = player.banditCampClears?.[campId];
+  if (last == null) return 0;
+  const now = player.currentYear * 12 + player.currentMonth;
+  return Math.max(0, BANDIT_COOLDOWN_MONTHS - (now - last));
 }
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EuropeMap'>;
@@ -66,7 +79,7 @@ function getBlockReasons(
   const total = t.travelCost + t.entryFee;
   if (player.prestige.glory < t.minGlory) reasons.push({ type: 'glory', required: t.minGlory });
   if (player.gold < total) reasons.push({ type: 'gold', required: total });
-  const missing = t.requiredItems.filter((r) => !player.inventory.some((i) => i.subtype === r));
+  const missing = t.requiredItems.filter((r) => !ownsRequiredItem(player.inventory, r));
   if (missing.length > 0) reasons.push({ type: 'items', missing });
   if (t.distance !== 'local' && !player.inventory.some((i) => i.subtype === 'horse')) {
     reasons.push({ type: 'horse' });
@@ -173,7 +186,7 @@ function TournamentSheet({ t, player, onTravel }: TournamentSheetProps) {
           <Text style={sheetStyles.infoLabel}>Équipement</Text>
           <View style={sheetStyles.equipRow}>
             {t.requiredItems.map((req) => {
-              const owned = player.inventory.some((i) => i.subtype === req);
+              const owned = ownsRequiredItem(player.inventory, req);
               return (
                 <Text key={req} style={[sheetStyles.equipItem, owned ? sheetStyles.equipOk : sheetStyles.equipFail]}>
                   {owned ? '✓' : '✗'} {ITEM_NAMES[req] ?? req}
@@ -253,11 +266,16 @@ function BanditSheet({ camp, player, onFight, onRest }: BanditSheetProps) {
   const power = Math.round(martialPower(player));
   const canRest = player.prestige.reputation < BANDIT_REST_REP_MAX;
   const winChance = Math.min(0.9, Math.max(0.1, 0.5 + (power - camp.difficulty) / 100));
+  const cooldownLeft = campCooldownLeft(player, camp.id);
+  const onCooldown = cooldownLeft > 0;
+  const yearsLeft = Math.ceil(cooldownLeft / 12);
 
   return (
     <View style={sheetStyles.container}>
       <Text style={sheetStyles.flavor}>
-        Un repaire de brigands qui rançonnent les routes alentour.
+        {onCooldown
+          ? 'Ce repaire a été nettoyé récemment ; les brigands se reconstituent peu à peu.'
+          : 'Un repaire de brigands qui rançonnent les routes alentour.'}
       </Text>
 
       <View style={sheetStyles.infoRow}>
@@ -278,9 +296,21 @@ function BanditSheet({ camp, player, onFight, onRest }: BanditSheetProps) {
         </View>
       </View>
 
-      <TouchableOpacity style={sheetStyles.enterBtn} onPress={onFight} activeOpacity={0.8}>
-        <Text style={sheetStyles.enterBtnText}>⚔ Nettoyer le camp</Text>
+      <TouchableOpacity
+        style={[sheetStyles.enterBtn, onCooldown && sheetStyles.enterBtnDisabled]}
+        onPress={onFight}
+        disabled={onCooldown}
+        activeOpacity={0.8}
+      >
+        <Text style={[sheetStyles.enterBtnText, onCooldown && sheetStyles.enterBtnTextDisabled]}>
+          ⚔ Nettoyer le camp
+        </Text>
       </TouchableOpacity>
+      {onCooldown && (
+        <Text style={sheetStyles.blockText}>
+          · Déjà nettoyé — encore ~{yearsLeft} an{yearsLeft > 1 ? 's' : ''} avant qu'il ne se repeuple.
+        </Text>
+      )}
 
       <TouchableOpacity
         style={[sheetStyles.restBtn, !canRest && sheetStyles.enterBtnDisabled]}
@@ -314,8 +344,13 @@ export default function EuropeMapScreen({ navigation }: Props) {
   const [result, setResult] = useState<{ title: string; lines: ChangeLine[]; note?: string } | null>(null);
 
   const pois = useMemo(
-    () => [...buildEuropePois(player?.prestige.glory ?? 0), ...buildBanditPois()],
-    [player?.prestige.glory],
+    () => {
+      const camps = buildBanditPois().map((c) =>
+        player && campCooldownLeft(player, c.id) > 0 ? { ...c, locked: true } : c,
+      );
+      return [...buildEuropePois(player?.prestige.glory ?? 0), ...camps];
+    },
+    [player?.prestige.glory, player?.banditCampClears, player?.currentYear, player?.currentMonth],
   );
 
   if (!player) return null;
@@ -345,7 +380,7 @@ export default function EuropeMapScreen({ navigation }: Props) {
     const winChance = Math.min(0.9, Math.max(0.1, 0.5 + (power - camp.difficulty) / 100));
     if (Math.random() < winChance) {
       applyStatDelta({ gold: camp.rewardGold, prestige: { glory: camp.rewardGlory, reputation: 3, honor: 3 } });
-      registerBanditVictory();
+      registerBanditVictory(camp.id);
       const scratch = 3 + Math.floor(Math.random() * 6); // 3–8: even victory draws blood
       applyDamage(scratch);
       addToHistory(`Vous avez nettoyé ${camp.label}. Les routes sont plus sûres.`);
@@ -444,6 +479,11 @@ export default function EuropeMapScreen({ navigation }: Props) {
         )}
       </View>
 
+      {/* Quick shortcuts */}
+      <View style={styles.footer}>
+        <MapShortcuts navigation={navigation} />
+      </View>
+
       {/* Location bottom sheet (tournament or bandit camp) */}
       <BottomSheet
         visible={selectedTournament !== null || selectedCamp !== null}
@@ -516,6 +556,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   mapWrap: { flex: 1 },
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 2,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
   legendBtn: {
     position: 'absolute',
     bottom: 14,

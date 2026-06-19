@@ -157,6 +157,8 @@ export interface Player {
   } | null;
   /** Bandit camps cleared on the Europe map (quest tracking). */
   banditsDefeated?: number;
+  /** Absolute month (year*12+month) each bandit camp was last cleared — drives the 5-year repopulation cooldown. */
+  banditCampClears?: Record<string, number>;
   /** Random events seen this calendar year (min-3-per-year pacing). */
   eventsThisYear?: number;
   /** Currently displayed epithet (see data/titles.ts). */

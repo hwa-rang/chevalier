@@ -103,6 +103,9 @@ export default function ShopScreen({ navigation }: Props) {
   const [caughtItem, setCaughtItem] = useState<ShopItem | null>(null);
   const [theftVerdict, setTheftVerdict] = useState<{ lead: string; note: string } | null>(null);
 
+  // Purchase-confirmation window (offers a shortcut to the inventory).
+  const [purchased, setPurchased] = useState<ShopItem | null>(null);
+
   const items = SHOP_ITEMS.filter((i) => i.category === activeCategory);
 
   function showToast(msg: string) {
@@ -128,7 +131,7 @@ export default function ShopScreen({ navigation }: Props) {
     const check = canBuy(player, shopItem);
     if (!check.allowed) return;
     purchaseItem(makeInventoryItem(shopItem), shopItem.price);
-    showToast('Équipement acheté — voir le personnage');
+    setPurchased(shopItem);
   }
 
   function handleSell(subtype: string) {
@@ -272,6 +275,28 @@ export default function ShopScreen({ navigation }: Props) {
           )}
         />
       )}
+
+      {/* Purchase confirmation → shortcut to inventory */}
+      <Modal visible={purchased !== null} transparent animationType="fade" onRequestClose={() => setPurchased(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Achat conclu</Text>
+            <Text style={styles.modalBody}>« {purchased?.name} » rejoint votre inventaire.</Text>
+            <TouchableOpacity
+              style={styles.modalBtnPrimary}
+              onPress={() => {
+                setPurchased(null);
+                navigation.navigate('Inventory');
+              }}
+            >
+              <Text style={styles.modalBtnPrimaryText}>Voir l'inventaire</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalBtnGhost} onPress={() => setPurchased(null)}>
+              <Text style={styles.modalBtnGhostText}>Continuer les achats</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Caught stealing → flee or surrender */}
       <Modal visible={caughtItem !== null} transparent animationType="fade" onRequestClose={() => setCaughtItem(null)}>

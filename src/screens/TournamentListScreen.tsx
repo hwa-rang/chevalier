@@ -12,6 +12,7 @@ import { Fonts } from '../theme/fonts';
 import { useGameStore } from '../store/gameStore';
 import { TOURNAMENTS } from '../data/tournaments';
 import type { Tournament } from '../data/tournaments';
+import { ownsRequiredItem } from '../utils/equipment';
 
 const TYPE_LABELS: Record<string, string> = {
   melee: 'Mêlée',
@@ -59,7 +60,7 @@ function getBlockReasons(
     reasons.push({ type: 'gold', required: total });
   }
   const missing = t.requiredItems.filter(
-    (req) => !player.inventory.some((item) => item.subtype === req),
+    (req) => !ownsRequiredItem(player.inventory, req),
   );
   if (missing.length > 0) {
     reasons.push({ type: 'items', missing });
@@ -164,7 +165,7 @@ export default function TournamentListScreen({ navigation }: TournamentListScree
                 <View style={styles.equipRow}>
                   <Text style={styles.equipLabel}>Équipement :</Text>
                   {t.requiredItems.map((req) => {
-                    const owned = player.inventory.some((i) => i.subtype === req);
+                    const owned = ownsRequiredItem(player.inventory, req);
                     return (
                       <Text
                         key={req}

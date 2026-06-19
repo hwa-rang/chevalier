@@ -37,6 +37,15 @@ export const SHOP_ITEMS: ShopItem[] = [
     requirements: { minAge: 16, minReputation: 20 },
   },
   {
+    catalogId: 'sword_shield',
+    name: 'Épée à une main',
+    category: 'weapon',
+    subtype: 'sword_shield',
+    price: 55,
+    description: 'Lame à une main, à manier de pair avec un bouclier.',
+    requirements: { minAge: 16, minReputation: 20 },
+  },
+  {
     catalogId: 'lance',
     name: 'Lance',
     category: 'weapon',

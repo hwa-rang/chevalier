@@ -21,6 +21,7 @@ import ImageMap from '../components/ImageMap';
 import BottomSheet from '../components/BottomSheet';
 import ActivityResultModal from '../components/ActivityResultModal';
 import FatigueGauge from '../components/FatigueGauge';
+import MapShortcuts from '../components/MapShortcuts';
 import { VILLAGE_POIS } from '../data/villagemap';
 import { bookEffectFor } from '../data/bookEffects';
 import type { PointOfInterest } from '../components/PixelMap';
@@ -183,6 +184,11 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
       req: () => ({ location: 'fields', statDelta: { gold: rint(1, 3), physicalStats: { endurance: 2 }, prestige: { honor: 0.2 } } }),
     },
     {
+      id: 'runFields', label: 'Courir dans la campagne', desc: 'Sprints en terrain découvert — surtout la vitesse, un peu la force.',
+      kind: 'principal',
+      req: () => ({ location: 'fields', statDelta: { physicalStats: { speed: 2, strength: 1 } } }),
+    },
+    {
       id: 'huntLegal', label: 'Chasser (légal)', desc: 'Gibier petit dans les zones autorisées.',
       kind: 'principal',
       cond: (p) => !hasBow(p), condMsg: 'Requiert un arc.',
@@ -312,6 +318,11 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
       }),
     },
     {
+      id: 'runForest', label: 'Courir à travers bois', desc: 'Foulées entre les arbres — surtout la vitesse, un peu l\'agilité.',
+      kind: 'principal',
+      req: () => ({ location: 'forest', statDelta: { physicalStats: { speed: 2, agility: 1 } } }),
+    },
+    {
       id: 'huntLegalForest', label: 'Chasser (légal)', desc: "Petit gibier dans la clairière autorisée.",
       kind: 'principal',
       cond: (p) => !hasBow(p), condMsg: 'Requiert un arc.',
@@ -344,6 +355,11 @@ const LOCATION_ACTIVITIES: Record<LocationId, Activity[]> = {
           ],
         },
       }),
+    },
+    {
+      id: 'runRiver', label: "Courir le long de la rivière", desc: 'Longues foulées sur la berge — surtout la vitesse, un peu l\'endurance.',
+      kind: 'principal',
+      req: () => ({ location: 'river', statDelta: { physicalStats: { speed: 2, endurance: 1 } } }),
     },
   ],
   craftsman: [
@@ -485,8 +501,9 @@ export default function VillageMapScreen({ navigation }: Props) {
         <ImageMap pois={pois} onPoiPress={handlePoiPress} />
       </View>
 
-      {/* Advance month */}
+      {/* Quick shortcuts + advance month */}
       <View style={styles.footer}>
+        <MapShortcuts navigation={navigation} />
         <TouchableOpacity
           style={styles.advanceBtn}
           onPress={() => advanceMonth()}
