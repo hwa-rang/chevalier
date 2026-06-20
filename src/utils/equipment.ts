@@ -35,6 +35,21 @@ export function slotForSubtype(subtype: string): EquipSlot | null {
   return SLOT_BY_SUBTYPE[subtype] ?? null;
 }
 
+/**
+ * Armes à deux mains (nom de fichier sprite « …-2mains-… ») — incompatibles
+ * avec un bouclier. Les autres armes se manient à une main.
+ */
+export const TWO_HANDED_WEAPONS: ReadonlySet<string> = new Set([
+  'long_sword', // épée longue (2 mains)
+  'bardiche', // hache d'hast (2 mains)
+  'bow', // arc (2 mains)
+  'training_staff', // bâton (2 mains)
+]);
+
+export function isTwoHanded(subtype: string): boolean {
+  return TWO_HANDED_WEAPONS.has(subtype);
+}
+
 export function isEquippable(subtype: string): boolean {
   return subtype in SLOT_BY_SUBTYPE;
 }

@@ -18,6 +18,7 @@ import {
   ENERGY_CAPACITY,
 } from '../store/gameStore';
 import { canRomance } from '../utils/romanceRules';
+import { archetypeById } from '../data/courtship';
 import type { Relation, RelationType, StatDelta } from '../types/game';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RelationDetail'>;
@@ -131,6 +132,9 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
   const applyStatDelta = useGameStore((s) => s.applyStatDelta);
   const addToHistory = useGameStore((s) => s.addToHistory);
   const consumeActionSlot = useGameStore((s) => s.consumeActionSlot);
+  const advanceCourtshipStage = useGameStore((s) => s.advanceCourtshipStage);
+  const breakCourtship = useGameStore((s) => s.breakCourtship);
+  const proposeMarriage = useGameStore((s) => s.proposeMarriage);
 
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -186,8 +190,13 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
   const isMaster = relation.type === 'master';
   const isLover = relation.type === 'lover';
 
+  // Romance — cour en cours / époux(se).
+  const isSuitor = player.courtship?.suitorId === relation.personId;
+  const isSpouse = !!player.spouseId && player.spouseId === relation.personId;
+  const courtArche = isSuitor && player.courtship ? archetypeById(player.courtship.archetype) : undefined;
+
   const romance = canRomance(player, relation);
-  const showFlirt = romance.allowed && !isFamily && !isLover;
+  const showFlirt = romance.allowed && !isFamily && !isLover && !isSuitor;
 
   // Random combat skill for "S'entraîner ensemble"
   const pickRandomCombatSkill = () => {
@@ -339,15 +348,70 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
     showFeedback(`Relation +4`);
   };
 
-  const doDemandeMarriage = () => {
-    if (relation.score < 80 || player.age < 16) return;
-    addToHistory(`Vous demandez ${relation.name} en mariage. Une nouvelle vie commence.`);
-    showFeedback(`${relation.name} accepte votre demande en mariage !`);
+  const doProposeMarriage = () => {
+    const res = proposeMarriage(relation.personId);
+    showFeedback(res.ok ? `${relation.name} accepte — vous voilà marié(e) !` : res.reason ?? 'Demande refusée.');
+  };
+
+  // --- COURTSHIP GESTURES (active suitor only) ---
+  /** A gesture: success scaled by archetype compatibility; failure cools the bond
+   *  and a cold-enough suitor leaves. */
+  const resolveGesture = (base: number, gain: number, baseHistory: string) => {
+    const compat = courtArche ? courtArche.compatibility(player) : 0;
+    const chance = Math.max(0.1, Math.min(0.95, base + compat / 200));
+    if (Math.random() < chance) {
+      updateScore(gain);
+      advanceCourtshipStage();
+      addToHistory(`${baseHistory} Votre lien se renforce.`);
+      showFeedback(`Relation +${gain} · La cour progresse.`);
+    } else {
+      const newScore = updateScore(-5);
+      addToHistory(`${baseHistory} La maladresse refroidit l'ambiance.`);
+      if (newScore < 25) {
+        breakCourtship();
+        showFeedback('Rejeté(e) — la cour prend fin.');
+      } else {
+        showFeedback('Relation -5 · Ce n\'est pas encore gagné.');
+      }
+    }
+  };
+
+  const doVisitSuitor = () => {
+    if (!tryUseSlot('secondary')) return;
+    resolveGesture(0.5, 6, `Vous passez du temps avec ${relation.name}.`);
+  };
+
+  const COURT_GIFT_COST = 8;
+  const doGiftSuitor = () => {
+    if (player.gold < COURT_GIFT_COST) {
+      showFeedback(`Pas assez d'or (${COURT_GIFT_COST} g requis).`);
+      return;
+    }
+    if (!tryUseSlot('secondary')) return;
+    applyStatDelta({ gold: -COURT_GIFT_COST });
+    resolveGesture(0.55, 8, `Vous offrez un présent à ${relation.name}.`);
+  };
+
+  const doPoemSuitor = () => {
+    if (!tryUseSlot('principal')) return;
+    const elo = player.knowledgeSkills.eloquence ?? 0;
+    resolveGesture(0.4 + elo * 0.004, 10, `Vous composez un poème pour ${relation.name}.`);
+  };
+
+  // Spouse jealousy: courting/flirting elsewhere while married wounds the spouse.
+  const JEALOUSY_PENALTY = 10;
+  const applyJealousy = () => {
+    if (!player.spouseId || player.spouseId === relation.personId) return;
+    const spouse = player.relations.find((r) => r.personId === player.spouseId);
+    if (!spouse) return;
+    addRelation({ ...spouse, score: Math.max(-100, spouse.score - JEALOUSY_PENALTY) });
+    addToHistory("Votre conjoint(e) a eu vent de vos écarts. La rancœur s'installe.");
   };
 
   // --- ROMANCE INTERACTIONS ---
   const doFlirter = () => {
     if (!tryUseSlot('secondary')) return;
+    applyJealousy();
     const roll = Math.random();
     updateScore(2);
     if (roll < 0.33) {
@@ -366,6 +430,7 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
   };
 
   const doCourtiser = () => {
+    applyJealousy();
     if (relation.score < 70) {
       updateScore(-5);
       addToHistory(`Vous tentez de courtiser ${relation.name}, mais l'intérêt s'est dissipé.`);
@@ -419,7 +484,8 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
   // Pickpocket — same agility-based roll as the market theft.
   const doFaireLesPoches = () => {
     if (!tryUseSlot('secondary')) return;
-    const chance = Math.max(0.12, Math.min(0.9, 0.5 + player.physicalStats.agility * 0.0035));
+    const crimeBonus = player.spouseArchetype === 'voleuse' ? 0.1 : 0;
+    const chance = Math.max(0.12, Math.min(0.95, 0.5 + player.physicalStats.agility * 0.0035 + crimeBonus));
     if (Math.random() < chance) {
       const loot = rint(1, 8);
       applyStatDelta({ gold: loot, prestige: { honor: -1 } });
@@ -560,23 +626,63 @@ export default function RelationDetailScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* LOVER ACTIONS */}
+        {/* COURTSHIP — active suitor */}
+        {isSuitor && player.courtship && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              {courtArche?.emoji ?? '❤'} Cour — étape {player.courtship.stage}/3
+            </Text>
+            <ActionButton
+              label="La revoir" description="+relation (temps)"
+              disabled={!secondaryLeft} disabledReason={SOCIAL_SLOT_MSG}
+              onPress={doVisitSuitor} variant="love"
+            />
+            <ActionButton
+              label="Offrir un présent" description="−8 g · +relation"
+              disabled={player.gold < 8 || !secondaryLeft}
+              disabledReason={player.gold < 8 ? 'Pas assez d\'or (8 g)' : SOCIAL_SLOT_MSG}
+              onPress={doGiftSuitor} variant="love"
+            />
+            <ActionButton
+              label="Composer un poème" description="+relation (selon éloquence)"
+              disabled={!principalLeft} disabledReason={SKILL_SLOT_MSG}
+              onPress={doPoemSuitor} variant="love"
+            />
+            <ActionButton
+              label="Demander en mariage"
+              description="Étape 3 atteinte · score ≥ 80"
+              disabled={player.courtship.stage < 3 || relation.score < 80 || player.age < 16}
+              disabledReason={
+                player.age < 16
+                  ? 'Vous êtes trop jeune'
+                  : player.courtship.stage < 3
+                  ? 'Courtisez-la encore quelque temps'
+                  : 'Score requis ≥ 80'
+              }
+              onPress={doProposeMarriage} variant="love"
+            />
+          </View>
+        )}
+
+        {/* LOVER / SPOUSE ACTIONS */}
         {isLover && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Amour</Text>
+            <Text style={styles.sectionTitle}>{isSpouse ? 'Époux(se)' : 'Amour'}</Text>
             <ActionButton
               label="Passer du temps ensemble" description="+4 relation"
               disabled={!secondaryLeft} disabledReason={SOCIAL_SLOT_MSG}
               onPress={doPasserTemps} variant="love"
             />
-            <ActionButton
-              label="Demande en mariage"
-              description="Score ≥ 80 · âge ≥ 16"
-              disabled={relation.score < 80 || player.age < 16}
-              disabledReason={player.age < 16 ? 'Vous êtes trop jeune' : 'Score requis ≥ 80'}
-              onPress={doDemandeMarriage}
-              variant="love"
-            />
+            {!isSpouse && (
+              <ActionButton
+                label="Demande en mariage"
+                description="Score ≥ 80 · âge ≥ 16"
+                disabled={relation.score < 80 || player.age < 16}
+                disabledReason={player.age < 16 ? 'Vous êtes trop jeune' : 'Score requis ≥ 80'}
+                onPress={doProposeMarriage}
+                variant="love"
+              />
+            )}
           </View>
         )}
 

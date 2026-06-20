@@ -14,10 +14,11 @@ import type {
   EquipSlot,
   PhysicalStats,
 } from '../types/game';
-import { slotForSubtype, EMPTY_EQUIPMENT } from '../utils/equipment';
+import { slotForSubtype, EMPTY_EQUIPMENT, isTwoHanded } from '../utils/equipment';
 import { getBackgroundBonuses } from '../utils/backgrounds';
 import { generateFamily } from '../utils/familyGenerator';
-import { makeNpc, makeRandomFriend } from '../utils/relationGenerator';
+import { makeNpc, makeRandomFriend, makeSuitor } from '../utils/relationGenerator';
+import { archetypeById } from '../data/courtship';
 import { formatStatDelta, type ChangeLine } from '../utils/statLabels';
 import type { GameEvent } from '../data/events';
 import { questById } from '../data/quests';
@@ -284,6 +285,11 @@ function makeDefaultPlayer(
     readBooks: [],
     flags: [],
     activeQuest: null,
+    arcState: { activeArcId: null, arcStartAbsMonth: 0, lastArcEndAbsMonth: 0, completedArcIds: [] },
+    courtship: null,
+    spouseId: null,
+    spouseArchetype: null,
+    lastCourtshipEndAbsMonth: 0,
     banditsDefeated: 0,
     eventsThisYear: 0,
     title: DEFAULT_TITLE_ID,
@@ -519,6 +525,12 @@ export interface GameState {
   unequipSlot: (slot: EquipSlot) => void;
   addRelation: (relation: Relation) => void;
   removeRelation: (personId: string) => void;
+  /** Fait progresser l'étape de la cour en cours (après un geste réussi). */
+  advanceCourtshipStage: () => void;
+  /** Termine la cour en cours (rupture) et tamponne le cooldown. */
+  breakCourtship: () => void;
+  /** Demande en mariage la personne (suitor de la cour, ou amant(e)). Crée l'époux. */
+  proposeMarriage: (personId: string) => { ok: boolean; reason?: string };
   /** Atomically deducts gold and adds item. No-ops if gold insufficient. */
   purchaseItem: (item: Item, cost: number) => void;
   /** Sells one item of a subtype to the merchant (refused past the per-item cap). */
@@ -613,6 +625,25 @@ export const useGameStore = create<GameState>()(
             griefModifiers: updatedPlayer.griefModifiers.filter(
               (gm) => gm.expiresAtAbsoluteMonth > absMonth,
             ),
+          };
+        }
+
+        // Arc watchdog: a major arc stuck for >60 months is force-released so it can
+        // never permanently block future arcs (the lock-never-released failsafe).
+        const arcSt = updatedPlayer.arcState;
+        if (arcSt && arcSt.activeArcId !== null && absMonth - arcSt.arcStartAbsMonth > 60) {
+          updatedPlayer = {
+            ...updatedPlayer,
+            arcState: {
+              activeArcId: null,
+              arcStartAbsMonth: 0,
+              lastArcEndAbsMonth: absMonth,
+              completedArcIds: arcSt.completedArcIds,
+            },
+            history: [
+              ...updatedPlayer.history,
+              { age, month, text: "Le temps a fini par dénouer une vieille affaire restée en suspens." },
+            ],
           };
         }
 
@@ -957,6 +988,60 @@ export const useGameStore = create<GameState>()(
 
         if (outcome.setActivePlague) {
           next = { ...next, activePlague: true };
+        }
+
+        // ── Orchestration des arcs majeurs (verrou + cooldown) ──
+        if (outcome.startArc) {
+          const prev = next.arcState ?? {
+            activeArcId: null,
+            arcStartAbsMonth: 0,
+            lastArcEndAbsMonth: 0,
+            completedArcIds: [],
+          };
+          const abs = next.currentYear * 12 + next.currentMonth;
+          next = {
+            ...next,
+            arcState: { ...prev, activeArcId: outcome.startArc, arcStartAbsMonth: abs },
+          };
+        }
+        if (outcome.endArc) {
+          const prev = next.arcState ?? {
+            activeArcId: null,
+            arcStartAbsMonth: 0,
+            lastArcEndAbsMonth: 0,
+            completedArcIds: [],
+          };
+          const abs = next.currentYear * 12 + next.currentMonth;
+          next = {
+            ...next,
+            arcState: {
+              activeArcId: null,
+              arcStartAbsMonth: 0,
+              lastArcEndAbsMonth: abs,
+              completedArcIds: prev.completedArcIds.includes(outcome.endArc)
+                ? prev.completedArcIds
+                : [...prev.completedArcIds, outcome.endArc],
+            },
+          };
+        }
+
+        // ── Romance : démarrage / fin de cour ──
+        if (outcome.startCourtship && !next.courtship && !next.spouseId) {
+          const arche = archetypeById(outcome.startCourtship);
+          if (arche) {
+            const abs = next.currentYear * 12 + next.currentMonth;
+            const compat = arche.compatibility(next);
+            const suitor = makeSuitor(arche.namePool, next.age, 25 + Math.max(0, Math.round(compat / 4)));
+            next = {
+              ...next,
+              relations: [...next.relations, suitor],
+              courtship: { suitorId: suitor.personId, archetype: arche.id, stage: 1, lastGestureAbsMonth: abs },
+            };
+          }
+        }
+        if (outcome.endCourtship && next.courtship) {
+          const abs = next.currentYear * 12 + next.currentMonth;
+          next = { ...next, courtship: null, lastCourtshipEndAbsMonth: abs };
         }
 
         next = {
@@ -1384,7 +1469,13 @@ export const useGameStore = create<GameState>()(
         const slot = slotForSubtype(subtype);
         if (!slot) return;
         if (!player.inventory.some((i) => i.subtype === subtype)) return;
-        const equipment = { ...(player.equipment ?? EMPTY_EQUIPMENT), [slot]: subtype };
+        let equipment = { ...(player.equipment ?? EMPTY_EQUIPMENT), [slot]: subtype };
+        // Une arme à deux mains et un bouclier ne peuvent coexister.
+        if (slot === 'weapon' && isTwoHanded(subtype)) {
+          equipment = { ...equipment, shield: null };
+        } else if (slot === 'shield' && equipment.weapon && isTwoHanded(equipment.weapon)) {
+          equipment = { ...equipment, weapon: null };
+        }
         set({ player: { ...player, equipment } });
       },
 
@@ -1406,6 +1497,65 @@ export const useGameStore = create<GameState>()(
             ? player.relations.map((r, i) => (i === existing ? relation : r))
             : [...player.relations, relation];
         set({ player: { ...player, relations: updated } });
+      },
+
+      advanceCourtshipStage: () => {
+        const { player } = get();
+        if (!player || !player.courtship) return;
+        const abs = player.currentYear * 12 + player.currentMonth;
+        set({
+          player: {
+            ...player,
+            courtship: {
+              ...player.courtship,
+              stage: Math.min(4, player.courtship.stage + 1),
+              lastGestureAbsMonth: abs,
+            },
+          },
+        });
+      },
+
+      breakCourtship: () => {
+        const { player } = get();
+        if (!player) return;
+        const abs = player.currentYear * 12 + player.currentMonth;
+        set({ player: { ...player, courtship: null, lastCourtshipEndAbsMonth: abs } });
+      },
+
+      proposeMarriage: (personId) => {
+        const { player } = get();
+        if (!player) return { ok: false };
+        if (player.spouseId) return { ok: false, reason: 'Vous êtes déjà marié(e).' };
+        if (player.age < 16) return { ok: false, reason: 'Vous êtes trop jeune.' };
+        const target = player.relations.find((r) => r.personId === personId);
+        if (!target) return { ok: false };
+        if (target.score < 80) return { ok: false, reason: 'Votre lien n\'est pas assez fort (score ≥ 80).' };
+        const courting = player.courtship?.suitorId === personId ? player.courtship : null;
+        if (courting && courting.stage < 3) {
+          return { ok: false, reason: 'Courtisez-la encore quelque temps avant de demander sa main.' };
+        }
+        // Effets de mariage selon l'archétype (le cas échéant).
+        const arche = courting ? archetypeById(courting.archetype) : undefined;
+        let next: Player = {
+          ...player,
+          spouseId: personId,
+          spouseArchetype: courting?.archetype ?? null,
+          courtship: null,
+          lastCourtshipEndAbsMonth: player.currentYear * 12 + player.currentMonth,
+          relations: player.relations.map((r) =>
+            r.personId === personId ? { ...r, type: 'lover', mutualInterest: false } : r,
+          ),
+        };
+        if (arche) next = applyDeltaToPlayer(next, arche.marriageEffects);
+        next = {
+          ...next,
+          history: [
+            ...next.history,
+            { age: next.age, month: next.currentMonth, text: `Vous avez épousé ${target.name}. Une nouvelle vie commence.` },
+          ],
+        };
+        set({ player: next });
+        return { ok: true };
       },
 
       removeRelation: (personId) => {
@@ -1611,7 +1761,10 @@ export const useGameStore = create<GameState>()(
       storage: createJSONStorage(() => AsyncStorage),
       // v1: cleared the inventory once (items had been seeded to preview sprites).
       // v2: removed the unused craft skills (tailoring/blacksmithing/bowyer).
-      version: 2,
+      // v3: added arcState (story-arc orchestration). lastArcEndAbsMonth:0 ⇒ old
+      //     saves are immediately arc-eligible.
+      // v4: added courtship/spouseId/lastCourtshipEndAbsMonth (romance track).
+      version: 4,
       migrate: (persistedState: any, fromVersion: number) => {
         if (!persistedState?.player) return persistedState;
         if (fromVersion < 1) {
@@ -1620,6 +1773,26 @@ export const useGameStore = create<GameState>()(
         if (fromVersion < 2) {
           const { craftSkills, ...rest } = persistedState.player;
           persistedState.player = rest;
+        }
+        if (fromVersion < 3) {
+          persistedState.player = {
+            ...persistedState.player,
+            arcState: {
+              activeArcId: null,
+              arcStartAbsMonth: 0,
+              lastArcEndAbsMonth: 0,
+              completedArcIds: [],
+            },
+          };
+        }
+        if (fromVersion < 4) {
+          persistedState.player = {
+            ...persistedState.player,
+            courtship: null,
+            spouseId: null,
+            spouseArchetype: null,
+            lastCourtshipEndAbsMonth: 0,
+          };
         }
         return persistedState;
       },

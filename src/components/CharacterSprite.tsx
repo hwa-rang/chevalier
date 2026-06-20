@@ -45,7 +45,7 @@ const SHIELD: Record<string, number> = {
 
 const WEAPON: Record<string, number> = {
   long_sword: require('../assets/sprites/png/weapon-sword.png'),
-  sword_shield: require('../assets/sprites/png/weapon-sword.png'),
+  sword_shield: require('../assets/sprites/png/weapon-sword-1h.png'),
   axe: require('../assets/sprites/png/weapon-axe.png'),
   mace: require('../assets/sprites/png/weapon-mace.png'),
   lance: require('../assets/sprites/png/weapon-lance.png'),

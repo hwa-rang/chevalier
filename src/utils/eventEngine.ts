@@ -2,6 +2,8 @@ import type { Player } from '../types/game';
 import type { GameEvent } from '../data/events';
 import { MONTHLY_EVENTS, ANNUAL_EVENTS } from '../data/events';
 import { QUEST_OFFER_EVENTS } from '../data/quests';
+import { ARC_MONTHLY_EVENTS, ARC_ANNUAL_EVENTS } from '../data/arcs';
+import { COURTSHIP_MONTHLY_EVENTS } from '../data/courtship';
 
 function getSkillValue(player: Player, skillPath: string): number {
   const dotIndex = skillPath.indexOf('.');
@@ -65,6 +67,43 @@ export function filterEligibleEvents(
     )
       return false;
 
+    // ── Story-arc gating ──────────────────────────────────────────────────────
+    const arc = player.arcState ?? {
+      activeArcId: null,
+      arcStartAbsMonth: 0,
+      lastArcEndAbsMonth: 0,
+      completedArcIds: [],
+    };
+    const absMonth = player.currentYear * 12 + player.currentMonth;
+    if (c.noActiveArc && arc.activeArcId !== null) return false;
+    if (c.requiresActiveArc !== undefined && arc.activeArcId !== c.requiresActiveArc)
+      return false;
+    if (
+      c.minMonthsSinceLastArc !== undefined &&
+      absMonth - arc.lastArcEndAbsMonth < c.minMonthsSinceLastArc
+    )
+      return false;
+
+    // ── Romance (cour) gating ─────────────────────────────────────────────────
+    const hasLover = player.relations.some((r) => r.type === 'lover');
+    if (c.single && (player.spouseId || player.courtship || hasLover)) return false;
+    if (c.requiresCourtship && !player.courtship) return false;
+    if (c.requiresSpouse && !player.spouseId) return false;
+    if (
+      c.requiresCourtshipArchetype !== undefined &&
+      player.courtship?.archetype !== c.requiresCourtshipArchetype
+    )
+      return false;
+    if (
+      c.minMonthsSinceCourtship !== undefined &&
+      absMonth - (player.lastCourtshipEndAbsMonth ?? 0) < c.minMonthsSinceCourtship
+    )
+      return false;
+    if (c.minCounter !== undefined) {
+      const counters = (player.counters ?? {}) as unknown as Record<string, number>;
+      if ((counters[c.minCounter.key] ?? 0) < c.minCounter.value) return false;
+    }
+
     return true;
   });
 }
@@ -91,7 +130,12 @@ export function rollMonthlyEvent(player: Player): GameEvent | null {
 
   const chance = 0.2 + lowRepBonus;
   if (!forced && Math.random() > chance) return null;
-  const eligible = filterEligibleEvents(player, [...MONTHLY_EVENTS, ...QUEST_OFFER_EVENTS]);
+  const eligible = filterEligibleEvents(player, [
+    ...MONTHLY_EVENTS,
+    ...QUEST_OFFER_EVENTS,
+    ...ARC_MONTHLY_EVENTS,
+    ...COURTSHIP_MONTHLY_EVENTS,
+  ]);
   if (eligible.length === 0) return null;
   // Priority events (rare scripted moments) preempt the random pool.
   const priority = eligible.filter((e) => e.priority);
@@ -100,7 +144,7 @@ export function rollMonthlyEvent(player: Player): GameEvent | null {
 
 /** Guaranteed to return one eligible annual event (null only if none pass conditions). */
 export function rollAnnualEvent(player: Player): GameEvent | null {
-  const eligible = filterEligibleEvents(player, ANNUAL_EVENTS);
+  const eligible = filterEligibleEvents(player, [...ANNUAL_EVENTS, ...ARC_ANNUAL_EVENTS]);
   if (eligible.length === 0) return null;
   // Priority events (the 1315 famine…) preempt the random pool.
   const priority = eligible.filter((e) => e.priority);

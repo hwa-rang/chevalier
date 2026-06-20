@@ -155,6 +155,34 @@ export interface Player {
     /** Snapshot of the tracked metric at acceptance (wins, gold, …). */
     baseline: number;
   } | null;
+  /** Orchestration des arcs narratifs majeurs. Au plus un arc actif à la fois. */
+  arcState?: {
+    /** Le verrou « un seul arc majeur » — id de l'arc en cours, ou null. */
+    activeArcId: string | null;
+    /** Mois absolu (année*12+mois) où l'arc actif a démarré (watchdog anti-blocage). */
+    arcStartAbsMonth: number;
+    /** Mois absolu de fin du dernier arc — ancre du cooldown entre arcs. */
+    lastArcEndAbsMonth: number;
+    /** Ids des arcs terminés (ledger typé, miroir des flags quest_done_*). */
+    completedArcIds: string[];
+  };
+  /** Cour en cours (piste romance mineure, au plus une à la fois). null = personne. */
+  courtship?: {
+    /** personId de la relation prétendant(e). */
+    suitorId: string;
+    /** id d'archétype (voir data/courtship). */
+    archetype: string;
+    /** Étape de la cour (1..N), progresse avec les gestes. */
+    stage: number;
+    /** Mois absolu du dernier geste de cour. */
+    lastGestureAbsMonth: number;
+  } | null;
+  /** personId de l'époux/épouse (la relation reste de type 'lover'), ou null. */
+  spouseId?: string | null;
+  /** Archétype de l'époux/épouse (pilote ses réactions : jalousie, reproches), ou null. */
+  spouseArchetype?: string | null;
+  /** Mois absolu de fin de la dernière cour (mariage ou rupture) — ancre du cooldown. */
+  lastCourtshipEndAbsMonth?: number;
   /** Bandit camps cleared on the Europe map (quest tracking). */
   banditsDefeated?: number;
   /** Absolute month (year*12+month) each bandit camp was last cleared — drives the 5-year repopulation cooldown. */

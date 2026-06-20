@@ -24,6 +24,24 @@ export function makeRandomFriend(playerAge: number): Relation {
 }
 
 /**
+ * A courtship suitor met opportunistically (see data/courtship). Tagged with
+ * npcRole 'suitor' so the courtship screen can find them; age is close to the
+ * player's, initial score reflects compatibility.
+ */
+export function makeSuitor(namePool: string[], playerAge: number, initialScore: number): Relation {
+  const name = namePool[Math.floor(Math.random() * namePool.length)] ?? 'Inconnu(e)';
+  return {
+    personId: uuidv4(),
+    name,
+    age: Math.max(15, playerAge + rint(-3, 3)),
+    type: 'friend',
+    score: Math.max(20, Math.min(60, initialScore)),
+    religion: 'christian',
+    npcRole: 'suitor',
+  };
+}
+
+/**
  * A recurring village professional (blacksmith, merchant, artisan…).
  * Identified by a stable `npcRole` so the same person is found again later.
  */

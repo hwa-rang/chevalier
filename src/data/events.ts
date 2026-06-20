@@ -13,6 +13,14 @@ export interface EventOutcome {
   ensureNpc?: { role: string; profession: string; scoreDelta: number };
   /** When true, sets player.activePlague = true for the year */
   setActivePlague?: boolean;
+  /** Démarre l'arc majeur de cet id (pose le verrou arcState.activeArcId). */
+  startArc?: string;
+  /** Termine l'arc de cet id (libère le verrou, tamponne le cooldown). */
+  endArc?: string;
+  /** Démarre une cour avec l'archétype de prétendant(e) de cet id (voir data/courtship). */
+  startCourtship?: string;
+  /** Termine la cour en cours (rupture, rival, scandale) — tamponne le cooldown. */
+  endCourtship?: boolean;
   /** Persistent story flags raised by this choice (dilemmas/quests). */
   setFlags?: string[];
   /** Health LOST by this choice (does not touch maxHealth). 0 HP = death. */
@@ -50,6 +58,24 @@ export interface GameEvent {
     minTempleVisits?: number;
     /** Requires an npc with this role among relations. */
     requiresNpcRole?: string;
+    /** Déclencheur d'arc : éligible seulement si aucun arc majeur n'est actif. */
+    noActiveArc?: boolean;
+    /** Étape/climax : éligible seulement à l'intérieur de CET arc actif. */
+    requiresActiveArc?: string;
+    /** Cooldown : mois écoulés requis depuis la fin du dernier arc. */
+    minMonthsSinceLastArc?: number;
+    /** Romance : célibataire (ni époux, ni amant(e), ni cour en cours). */
+    single?: boolean;
+    /** Romance : une cour est actuellement active. */
+    requiresCourtship?: boolean;
+    /** Romance : le joueur est marié (a un époux/épouse). */
+    requiresSpouse?: boolean;
+    /** Romance : la cour active est de cet archétype. */
+    requiresCourtshipArchetype?: string;
+    /** Romance : mois écoulés requis depuis la fin de la dernière cour (cooldown). */
+    minMonthsSinceCourtship?: number;
+    /** Fréquentation d'un lieu : compteur (counters) au moins égal à la valeur. */
+    minCounter?: { key: string; value: number };
   };
   outcomes: EventOutcome[];
   /** Priority events preempt the normal random pick when eligible (famine…). */

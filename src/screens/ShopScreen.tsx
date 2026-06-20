@@ -146,7 +146,9 @@ export default function ShopScreen({ navigation }: Props) {
       showToast('Vous êtes épuisé — revenez le mois prochain.');
       return;
     }
-    if (Math.random() < theftChance(player.physicalStats.agility)) {
+    // A voleuse spouse is a partner in crime: easier larceny.
+    const crimeBonus = player.spouseArchetype === 'voleuse' ? 0.1 : 0;
+    if (Math.random() < theftChance(player.physicalStats.agility) + crimeBonus) {
       stealMarketSuccess(makeInventoryItem(shopItem));
       showToast(`Subtilisé : ${shopItem.name} (−1 honneur)`);
     } else {

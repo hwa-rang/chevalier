@@ -11,7 +11,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/fonts';
 import { useGameStore } from '../store/gameStore';
-import { slotForSubtype, EMPTY_EQUIPMENT } from '../utils/equipment';
+import { slotForSubtype, EMPTY_EQUIPMENT, isTwoHanded } from '../utils/equipment';
 import { bookEffectFor } from '../data/bookEffects';
 import ActivityResultModal from '../components/ActivityResultModal';
 import type { ChangeLine } from '../utils/statLabels';
@@ -133,6 +133,12 @@ export default function InventoryScreen({ navigation }: Props) {
           renderItem={({ item, section }) => {
             const slot = slotForSubtype(item.subtype);
             const equipped = slot ? equipment[slot] === item.subtype : false;
+            // A two-handed weapon and a shield can't be worn together.
+            const equippedWeaponTwoHanded = !!equipment.weapon && isTwoHanded(equipment.weapon);
+            const conflict =
+              !equipped &&
+              ((slot === 'shield' && equippedWeaponTwoHanded) ||
+                (slot === 'weapon' && isTwoHanded(item.subtype) && !!equipment.shield));
             const isBook = section.category === 'book';
             const alreadyRead = isBook && (player.readBooks ?? []).includes(item.subtype);
             return (
@@ -157,12 +163,29 @@ export default function InventoryScreen({ navigation }: Props) {
                 )}
                 {slot && (
                   <TouchableOpacity
-                    style={[styles.equipBtn, equipped && styles.equipBtnOn]}
+                    style={[
+                      styles.equipBtn,
+                      equipped && styles.equipBtnOn,
+                      conflict && styles.equipBtnDisabled,
+                    ]}
                     onPress={() => (equipped ? unequipSlot(slot) : equipItem(item.subtype))}
+                    disabled={conflict}
                     activeOpacity={0.75}
                   >
-                    <Text style={[styles.equipBtnText, equipped && styles.equipBtnTextOn]}>
-                      {equipped ? 'Équipé ✓' : 'Équiper'}
+                    <Text
+                      style={[
+                        styles.equipBtnText,
+                        equipped && styles.equipBtnTextOn,
+                        conflict && styles.equipBtnTextDisabled,
+                      ]}
+                    >
+                      {equipped
+                        ? 'Équipé ✓'
+                        : conflict
+                        ? slot === 'shield'
+                          ? 'Arme à 2 mains'
+                          : 'Bouclier équipé'
+                        : 'Équiper'}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -293,6 +316,15 @@ const styles = StyleSheet.create({
   },
   equipBtnTextOn: {
     color: '#FFFFFF',
+  },
+  equipBtnDisabled: {
+    backgroundColor: Colors.surface,
+    borderColor: Colors.surfaceDark,
+    opacity: 0.55,
+  },
+  equipBtnTextDisabled: {
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
   },
   emptyContainer: {
     flex: 1,
