@@ -36,7 +36,7 @@ export const TOURNAMENT_TYPE_ICONS: Record<TournamentType, string> = {
 export const TOURNAMENT_TYPE_LABELS: Record<TournamentType, string> = {
   melee:     'Mêlée',
   joust:     'Joûte',
-  swordDuel: "Duel à l'épée",
+  swordDuel: 'Combat à pied',
   archery:   "Tir à l'arc",
   chess:     'Échecs',
   poetry:    'Poésie',

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
@@ -34,6 +35,22 @@ import {
 
 const WIN_TINT = 'rgba(67,169,92,0.20)';
 const LOSE_TINT = 'rgba(239,90,111,0.20)';
+
+// Illustration de combat par type de tournoi (bannière en haut de l'écran).
+const TOURNAMENT_IMAGES: Record<TournamentType, number> = {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  melee: require('../assets/tournaments/melee.png'),
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  joust: require('../assets/tournaments/joust.png'),
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  swordDuel: require('../assets/tournaments/swordDuel.png'),
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  archery: require('../assets/tournaments/archery.png'),
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  chess: require('../assets/tournaments/chess.png'),
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  poetry: require('../assets/tournaments/poetry.png'),
+};
 
 // ── Opponent name pool ──────────────────────────────────────────────────────
 
@@ -188,7 +205,7 @@ type Phase = 'intro' | 'choice' | 'resolve' | 'event' | 'result';
 const TYPE_LABELS: Record<TournamentType, string> = {
   melee: 'Mêlée',
   joust: 'Joûte',
-  swordDuel: "Duel à l'épée",
+  swordDuel: 'Combat à pied',
   archery: "Tir à l'arc",
   chess: 'Échecs',
   poetry: 'Poésie',
@@ -557,6 +574,12 @@ export default function TournamentScreen({ navigation, route }: TournamentScreen
             Round {roundIndex + 1} / {opponents.length}
           </Text>
         </View>
+
+        <Image
+          source={TOURNAMENT_IMAGES[tournament.type]}
+          style={styles.banner}
+          resizeMode="cover"
+        />
 
         <ScrollView contentContainerStyle={styles.body}>
           <ResourceBars
@@ -932,6 +955,12 @@ const styles = StyleSheet.create({
   },
   headerWin: { backgroundColor: 'rgba(67,169,92,0.25)' },
   headerLose: { backgroundColor: 'rgba(239,90,111,0.25)' },
+  banner: {
+    width: '100%',
+    height: 130,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
   headerTitle: {
     flex: 1,
     fontFamily: Fonts.title,

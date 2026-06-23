@@ -17,7 +17,7 @@ import { ownsRequiredItem } from '../utils/equipment';
 const TYPE_LABELS: Record<string, string> = {
   melee: 'Mêlée',
   joust: 'Joûte',
-  swordDuel: "Duel à l'épée",
+  swordDuel: 'Combat à pied',
   archery: "Tir à l'arc",
   chess: 'Échecs',
   poetry: 'Poésie',
